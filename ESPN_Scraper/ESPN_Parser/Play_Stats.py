@@ -323,6 +323,7 @@ class Play_Stats:
 
 			# Print remaining characters
 			self.Print_Remaining(play_desc)
+
 			return True
 
 		elif fg1 or fg2:
@@ -496,6 +497,17 @@ class Play_Stats:
 	# Prints unparsed characters
 	def Print_Remaining(self, play_desc):
 		return
+		play_desc = re.sub(" .\Z|\.", "", play_desc)
+		if len(play_desc) > 1:
+			print "\nThis play wasn't parsed: "
+			print play_desc
+			self.Unparsed = play_desc
+			# raw_input(play_desc)
+
+
+
+	# Prints unparsed characters
+	def Print_Remaining(self, play_desc):
 		play_desc = re.sub(" .\Z|\.", "", play_desc)
 		if len(play_desc) > 1:
 			print "\nThis play wasn't parsed: "
