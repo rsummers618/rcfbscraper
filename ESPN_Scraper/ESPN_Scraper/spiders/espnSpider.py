@@ -13,7 +13,7 @@ months = {"January": 1, "Febuary": 2, "March": 3,
 			"August": 8, "September": 9, "October": 10, 
 			"November": 11, "December": 12}
 
-year = 2013
+year = 2014
 
 # Returns the contents of a .csv file in an array
 def Read_CSV(file_name):
@@ -126,7 +126,14 @@ def make_sure_path_exists(path):
 class espnSpider(scrapy.Spider):
 	name = "espn"
 	allowed_domains = ["espn.go.com"]
+	start_urls = []
+	start_urls.append("http://espn.go.com/college-football/scoreboard/_/group/80/year/2014/seasontype/2/week/14")
+	#for x in range(0,19):
+	#	start_urls.append("http://espn.go.com/college-football/scoreboard/_/group/80/year/"+str(year)+"/seasontype/2/week/"+str(x))
+	#start_urls.append("http://espn.go.com/college-football/scoreboard/_/group/80/year/"+str(year)+"/seasontype/3/week/1")
+	'''
 	start_urls = [
+		http://espn.go.com/college-football/scoreboard/_/group/80/year/2015/seasontype/2/week/2
 		"http://scores.espn.go.com/ncf/scoreboard?confId=80&seasonYear=" + str(year) + "&seasonType=2&weekNumber=1",
 		"http://scores.espn.go.com/ncf/scoreboard?confId=80&seasonYear=" + str(year) + "&seasonType=2&weekNumber=2",
 		"http://scores.espn.go.com/ncf/scoreboard?confId=80&seasonYear=" + str(year) + "&seasonType=2&weekNumber=3",
@@ -145,22 +152,33 @@ class espnSpider(scrapy.Spider):
 		"http://scores.espn.go.com/ncf/scoreboard?confId=80&seasonYear=" + str(year) + "&seasonType=2&weekNumber=16",
 		"http://scores.espn.go.com/ncf/scoreboard?confId=80&seasonYear=" + str(year) + "&seasonType=3&weekNumber=17"
 	]
+	'''
 
 	def parse(self, response):
 		# Read team abbv data
+
+		print "response"
+		print response
 		team_names = Read_CSV(str(year) + " Stats/team.csv")
 		team_names = team_names[1:]
 		team_abbvs = Read_CSV(str(year) + " Stats/abbrevations.csv")
 		# Parse the days of the week
-		raw_days = response.xpath('//h4[contains(@class, "games-date")]/text()').extract()
+		raw_days = response.xpath('//h2[contains(@class, "date-heading js-show")]/text()').extract()
 		days = []
 		for day in raw_days:
 			day_split = day.split(',')
 			days.append(day_split[0])
 		# Get game containers
-		gameDays = response.xpath('//div[contains(@class, "gameDay-Container")]')
-		gameDates = response.xpath('//h4[contains(@class, "games-date")]/text()').extract()
+		gameDays = response.xpath('//div[contains(@class, "scoreboard-top no-tabs")]')
+		gameDates = response.xpath('//h2[contains(@class, "date-heading js-show")]/text()').extract()
 		# Begin to set game items
+
+		print "raw days"
+		print raw_days[0]
+		print "gameDays"
+		print gameDays[0]
+		print "game Dates"
+		print gameDates[0]
 		games = []
 		for i in range(0, len(gameDays)):
 			day = gameDays[i]
@@ -180,7 +198,8 @@ class espnSpider(scrapy.Spider):
 				new_game['box_link'] = str(game.xpath('.//li/a[contains(@href, "boxscore")]/@href').extract())
 				games.append(new_game)
 		# Write page to file
-		weekNum = response.url.split("=")[-1]
+		print "RESPONSE IS " + str(response.url)
+		weekNum = response.url.split("/")[-1]
 		newPath = os.getcwd() + "/" + str(year) + "/week_" + weekNum
 		make_sure_path_exists(newPath)
 		for game in games:

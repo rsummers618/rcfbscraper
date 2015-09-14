@@ -497,7 +497,8 @@ class boxscoreSpider(scrapy.Spider):
 		# Convert to team-game-statistics format
 		visitor_TGS = Team_Game_Statistics(code, visitor)
 		home_TGS = Team_Game_Statistics(code, home)
-		team_names = Read_CSV(str(year) + " Stats/team.csv")
+		team_names = Read_CSV("ESPN_Scraper/ESPN_teams.csv")
+		#team_names = Read_CSV(str(year) + " Stats/team.csv")
 		team_names = team_names[1:]
 		team_abbvs = Read_CSV(str(year) + " Stats/abbrevations.csv")
 		# Add team names to abbreviations list

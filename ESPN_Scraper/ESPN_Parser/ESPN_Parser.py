@@ -12,7 +12,7 @@ from Drive import *
 from Play_Stats import *
 from Team_Game_Statistics import *
 
-year = 2013
+year = 2014
 
 
 # ==================================================================
@@ -295,17 +295,22 @@ def Compile_Drives(pbp_data, game):
 	drives = []
 	cur_drive = Drive(0, 0, 0, 0, 0, 0)
 	cur_drive.Finished = 1
-	new_Quarter = False
+	#new_Quarter = False
+	new_Quarter = True
 	for play in pbp_data:
 
 		game.Set_Quarter(play)
 		start = re.match(r"t(?P<offense>\d+) at (?P<min>\d{1,2})\:(?P<sec>\d{2})", play[0])
-		stop = re.match(r"t(?P<team>\d+) DRIVE TOTALS\: (?P<plays>\d+) play(?:s)?\, (?:\-)?(?P<yards>\d+) (?:yards|yard|yds|yd)\, (?P<min>\d{1,2})\:(?P<sec>\d{2})", play[0])
-		quarter_start = re.search("Quarter Play-by-Play",play[0],re.IGNORECASE)
+		stop = re.match(r"t(?P<team>\d+) DRIVE TOTALS\: .*(?P<plays>\d+) play(?:s)?\, (?:\-)?(?P<yards>\d+) (?:yards|yard|yds|yd)\, (?P<min>\d{1,2})\:(?P<sec>\d{2})", play[0])
+		quarter_start_old = re.search("Quarter Play-by-Play",play[0],re.IGNORECASE)
+		quarter_start_new = re.search("End of .* Quarter",play[1],re.IGNORECASE)
+		#quarter_start = quarter_start_new | quarter_start_old
+		quarter_start = quarter_start_old if quarter_start_old else quarter_start_new
 		if quarter_start:
 			new_Quarter = True
 
 		if start:	# Check for the start of a new drive
+			off = int(start.group("offense"))
 			if int(start.group("offense")) == game.Home:
 				offense = game.Home
 				defense = game.Visitor
@@ -384,7 +389,7 @@ def Extract_Team_Code(game_code, team):
 # ==================================================================
 
 # Read in all play-by-play files
-path = "../pbp/"
+path = "../"+str(year) + "/pbp/"
 allPlays = []
 allDrives = []
 allTGS = []
