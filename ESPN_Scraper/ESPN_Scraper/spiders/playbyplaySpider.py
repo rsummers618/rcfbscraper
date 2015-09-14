@@ -6,7 +6,7 @@ import errno
 import csv
 from ESPN_Scraper.items import PBP_GameItem
 
-year = 2014
+year = 2015
 
 # Make sure os path exists, create it if not
 def make_sure_path_exists(path):
@@ -38,40 +38,41 @@ def ESPN_id_to_Name(id):
 	return -1
 
 class playbyplaySpider(scrapy.Spider):
-	# name = "playbyplay"
-	# allowed_domains = ["espn.go.com"]
+	name = "playbyplay"
+	allowed_domains = ["espn.go.com"]
 
 
 	# Build URLs from scraped data
 	start_urls = []
 	for i in range(1, 2):
-		#make_sure_path_exists(str(year) + "/week_" + str(i))
-		folder = "../" + str(year) + "/scraped_games"
+		make_sure_path_exists(str(year) + "/week_" + str(i))
+		#folder = "../" + str(year) + "/scraped_games"
+		folder = str(year) + "/week_" + str(i)
 		os.chdir(folder)
 		for filename in os.listdir(os.getcwd()):
 			new_game = PBP_GameItem()
 			with open (filename, "r") as f:
 				data = f.read()
 				# Get start URL
-				m = re.search(r"Plays: (?P<url>\S+)", data)
+				m = re.search(r"PBP: (?P<url>\S+)", data,re.IGNORECASE)
 				if ''.join(e for e in m.group("url") if e.isalnum()) == "httpscoresespngocom":
 					continue
 				start_urls.append(m.group("url") + "&period=0")
 				new_game['link'] = m.group("url") + "&period=0"
 				# Get date
-				m = re.search(r"Date: (?P<date>\d+)", data)
+				m = re.search(r"Date: (?P<date>\d+)", data,re.IGNORECASE)
 				new_game['date'] = m.group("date")
 				# Get home
-				m = re.search(r"Home: \D+ \((?P<code>\d+)\)", data)
+				m = re.search(r"Home: \D+ \((?P<code>\d+)\)", data,re.IGNORECASE)
 				new_game['home_code'] = m.group("code")
 				# Get visitor
-				m = re.search(r"Visitor: \D+ \((?P<code>\d+)\)", data)
-				new_game['visitor_code'] = m.group("code")
+				m = re.search(r"Away: \D+ \((?P<code>\d+)\)", data,re.IGNORECASE)
+				new_game['away_code'] = m.group("code")
 			infofile = ''.join(e for e in new_game['link'] if e.isalnum())
 			make_sure_path_exists(os.getcwd() + "/../../tmpfiles/")
 			with open(os.getcwd() + "/../../tmpfiles/" + infofile + ".txt", 'w') as f:
 				f.write(new_game['link'] + "\n")
-				f.write("Code: " + str(new_game['visitor_code']).zfill(4))
+				f.write("Code: " + str(new_game['away_code']).zfill(4))
 				f.write(str(new_game['home_code']).zfill(4))
 				f.write(new_game['date'])
 				f.close()
@@ -92,6 +93,12 @@ class playbyplaySpider(scrapy.Spider):
 		home = (int(code) / 100000000) % 1000
 		date = int(code) % 100000000
 		rows.append([code, "", visitor, home])
+
+		away_score = 0
+		home_score = 0
+		prev_home_score = 0
+		prev_away_score = 0
+
 		for row in table.xpath('//li[contains(@class, "accordion-item")]'):
 
 			## Handle header
@@ -101,12 +108,22 @@ class playbyplaySpider(scrapy.Spider):
 				halfText = row.xpath('.//span[contains(@class, "post-play")]/text()').extract()[0]
 				rows.append(['',halfText,away_score,home_score])
 				continue
+
+			prev_home_score = home_score
+			prev_away_score = away_score
 			driveTeam = header.xpath('.//img[contains(@class, "team-logo")]/@src').extract()
 			driveTeam = str(driveTeam[0]).split('/')[-1].split('.')[0]
-			header_home = header.xpath('.//span[contains(@class, "home")]')
+
+
+			###############################
+			## TODO NOTE THIS WILL PROBABLY BREAK
+			## ESPN HAS HOME AND AWAY MIXED UP!!!!
+			## SO WE REVERSE THEM FOR NOW
+			#####################################
+			header_home = header.xpath('.//span[contains(@class, "away")]')
 			home_abv = header_home.xpath('.//span[contains(@class, "team-name")]/text()').extract()
 			home_score = header_home.xpath('.//span[contains(@class, "team-score")]/text()').extract()[0]
-			header_away = header.xpath('.//span[contains(@class, "away")]')
+			header_away = header.xpath('.//span[contains(@class, "home")]')
 			away_abv = header_away.xpath('.//span[contains(@class, "team-name")]/text()').extract()
 			away_score = header_away.xpath('.//span[contains(@class, "team-score")]/text()').extract()[0]
 			drive_details = header.xpath('.//span[contains(@class, "drive-details")]/text()').extract()[0]
@@ -124,7 +141,11 @@ class playbyplaySpider(scrapy.Spider):
 				else:
 					place = ''
 				desc = play.xpath('.//span[contains(@class, "post-play")]/text()').extract()[0]
-				rows.append([place,desc,away_score,home_score])
+				last_item = row.xpath('.//span[contains(@class, "post-play")]/text()').extract()[-1]
+				if desc == last_item:
+					rows.append([place,desc,away_score,home_score])
+				else:
+					rows.append([place,desc,prev_away_score,prev_home_score])
 
 			rows.append([driveTeamName + " DRIVE TOTALS: " + drive_details,away_abv[0],home_abv[0]])
 
