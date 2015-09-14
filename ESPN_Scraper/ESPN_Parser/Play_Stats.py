@@ -89,21 +89,21 @@ class Play_Stats:
 
 	def ESPN_Parser(self,play_desc,prev_play):
 		# Define regex types
-		rush1 = re.match(r"((?P<rusher>\D+) (?:run|rush) for\s*)", play_desc)
-		rush2 = re.match(r"((?P<rusher>\D+) (?P<yards>\d+) (?:yd|yard|yds|yards) (?:run|rush)\s*)", play_desc,re.IGNORECASE)
-		sack = re.match(r"((?P<passer>\D+) sacked by )", play_desc)
-		pass_cmp = re.match(r"((?P<passer>\D+) pass complete\s*)", play_desc)
-		pass_inc = re.match(r"((?P<passer>\D+) pass incomplete\s*)", play_desc)
-		pass_int = re.match(r"((?P<passer>\D+) pass intercepted\s*)", play_desc)
-		pass_td = re.match(r"((?P<receiver>\D+)(?P<yards>\d+) (?:yd|yard|yds|yards) pass from (?P<passer>\D+)\s*)", play_desc,re.IGNORECASE)
-		rcvr1_regex = re.compile(r"(to (?P<receiver>\D+)\Z)")
-		rcvr2_regex = re.compile(r"(to (?P<receiver>\D+) for\W+)")
-		rcvr3_regex = re.compile(r"(to (?P<receiver>\D+))")
-		int_regex = re.compile(r"((?P<interceptor>\D+) return )")
-		sacker_regex = re.compile(r"((?:(?P<sacker>\D+)|(?P<sacker_group>\D+ and \D+)) for )")
-		punt = re.match(r"((?P<punter>\D+) (?:punt|punts) for\s*)", play_desc,re.IGNORECASE)
-		punt_blocked = re.match(r"((?P<punter>\D+) (?:punt|punts) blocked\s*)", play_desc,re.IGNORECASE)
-		kickoff = re.match(r"((?P<kicker>\D+) (?:kickoff) for\s*)", play_desc,re.IGNORECASE)
+		rush1 = re.search(r"((?P<rusher>\D+) (?:run|rush) for\s*)", play_desc,re.IGNORECASE)
+		rush2 = re.search(r"((?P<rusher>\D+) (?P<yards>\d+) (?:yd|yard|yds|yards) (?:run|rush)\s*)", play_desc,re.IGNORECASE)
+		sack = re.search(r"((?P<passer>\D+) sacked by )", play_desc,re.IGNORECASE)
+		pass_cmp = re.search(r"((?P<passer>\D+) pass complete\s*)", play_desc,re.IGNORECASE)
+		pass_inc = re.search(r"((?P<passer>\D+) pass incomplete\s*)", play_desc,re.IGNORECASE)
+		pass_int = re.search(r"((?P<passer>\D+) pass intercepted\s*)", play_desc,re.IGNORECASE)
+		pass_td = re.search(r"((?P<receiver>\D+)(?P<yards>\d+) (?:yd|yard|yds|yards) pass from (?P<passer>\D+)\s*)", play_desc,re.IGNORECASE)
+		rcvr1_regex = re.compile(r"(to (?P<receiver>\D+)\Z)",re.IGNORECASE)
+		rcvr2_regex = re.compile(r"(to (?P<receiver>\D+) for\W+)",re.IGNORECASE)
+		rcvr3_regex = re.compile(r"(to (?P<receiver>\D+))",re.IGNORECASE)
+		int_regex = re.compile(r"((?P<interceptor>\D+) return )",re.IGNORECASE)
+		sacker_regex = re.compile(r"((?:(?P<sacker>\D+)|(?P<sacker_group>\D+ and \D+)) for )",re.IGNORECASE)
+		punt = re.search(r"((?P<punter>\D+) (?:punt|punts) for\s*)", play_desc,re.IGNORECASE)
+		punt_blocked = re.search(r"((?P<punter>\D+) (?:punt|punts) blocked\s*)", play_desc,re.IGNORECASE)
+		kickoff = re.search(r"((?P<kicker>\D+) (?:kickoff) for\s*)", play_desc,re.IGNORECASE)
 
 		fg1 = re.match(r"((?P<kicker>\D+) (?P<yards>\d+) (?:yd|yard|yds|yards) (?:FG|field goal)\s*)", play_desc,re.IGNORECASE)
 		fg2 = re.match(r"(FG|field goal)", play_desc,re.IGNORECASE)
@@ -121,6 +121,7 @@ class Play_Stats:
 
 		if no_play:
 			self.No_Play = 1
+
 			Regex_match = True
 
 		if fumble_return:
@@ -133,6 +134,7 @@ class Play_Stats:
 			play_desc = self.Check_TD(play_desc, prev_play)
 
 			Regex_match = True
+
 
 		if int_return:
 			self.Play_Type = "Pass"
@@ -160,7 +162,6 @@ class Play_Stats:
 				self.Rusher = rush2.group("rusher")
 				# get yards gained
 				self.Yards_Gained = int(rush2.group("yards"))
-				#raw_input("RUSH2")
 			elif sack:
 				self.Play_Type = "SACK"
 				play_desc = re.sub(re.escape(sack.group(0)), "", play_desc)
@@ -289,7 +290,6 @@ class Play_Stats:
 
 		if kickoff or kickoff_return:
 			self.Play_Type = "KICKOFF"
-
 
 			if kickoff:
 				play_desc = re.sub(re.escape(kickoff.group(0)), "", play_desc)
@@ -515,8 +515,8 @@ class Play_Stats:
 	def Print_Remaining(self, play_desc):
 		play_desc = re.sub(" .\Z|\.", "", play_desc)
 		if len(play_desc) > 1:
-			print "\nThis play wasn't parsed: "
-			print play_desc
+			# print "\nThis play wasn't parsed: "
+			# print play_desc
 			self.Unparsed = play_desc
 			# raw_input(play_desc)
 
@@ -744,30 +744,30 @@ class Play_Stats:
 		expt_regex1 = re.compile(r"((?:, )?(?: )?\((?P<kicker>\D+) KICK\))", re.IGNORECASE)
 		td = td_regex.search(play_desc)
 		if td:
-			# offesive TD
-			if self.Off_Points >= prev_play.Off_Points + 6 and self.Offense == prev_play.Offense:
-				self.Off_Touchdown = 1
-				if self.Yards_Gained >= self.Distance:
-					self.First_Down = 1
-			# offensive TD on first play
-			elif self.Off_Points >= prev_play.Def_Points + 6 and self.Offense == prev_play.Defense:
-				self.Off_Touchdown = 1
-				if self.Yards_Gained >= self.Distance:
-					self.First_Down = 1
-			# defensive TD
-			elif self.Def_Points >= prev_play.Def_Points + 6 and self.Defense == prev_play.Defense:
-				self.Def_Touchdown = 1
-			# defensive TD on first play
-			elif self.Def_Points >= prev_play.Off_Points + 6 and self.Defense == prev_play.Offense:
-				self.Def_Touchdown = 1
 			play_desc = re.sub(re.escape(td.group(0)), "", play_desc)
-			# check for extra point
-			extra_pt = expt_regex1.match(play_desc)
-			if extra_pt:
-				self.Extra_Pt_Att = 1
-				self.Kick_Good = 1
-				self.Kicker = extra_pt.group("kicker")
-				play_desc = re.sub(re.escape(extra_pt.group(0)), "", play_desc)
+		# offesive TD
+		if self.Off_Points >= prev_play.Off_Points + 6 and self.Offense == prev_play.Offense:
+			self.Off_Touchdown = 1
+			if self.Yards_Gained >= self.Distance:
+				self.First_Down = 1
+		# offensive TD on first play
+		elif self.Off_Points >= prev_play.Def_Points + 6 and self.Offense == prev_play.Defense:
+			self.Off_Touchdown = 1
+			if self.Yards_Gained >= self.Distance:
+				self.First_Down = 1
+		# defensive TD
+		elif self.Def_Points >= prev_play.Def_Points + 6 and self.Defense == prev_play.Defense:
+			self.Def_Touchdown = 1
+		# defensive TD on first play
+		elif self.Def_Points >= prev_play.Off_Points + 6 and self.Defense == prev_play.Offense:
+			self.Def_Touchdown = 1
+		# check for extra point
+		extra_pt = expt_regex1.match(play_desc)
+		if extra_pt:
+			self.Extra_Pt_Att = 1
+			self.Kick_Good = 1
+			self.Kicker = extra_pt.group("kicker")
+			play_desc = re.sub(re.escape(extra_pt.group(0)), "", play_desc)
 		return play_desc
 
 

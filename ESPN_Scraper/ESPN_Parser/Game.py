@@ -3,6 +3,7 @@ import re
 # Holds the data for a gane
 class Game:
 
+
 	# Constructor
 	def __init__(self, pbp_data):
 		self.Code = pbp_data[0][0]
@@ -11,30 +12,24 @@ class Game:
 		self.Visitor_Pts = 0
 		self.Home_Pts = 0
 
-
-	# Set home/visitor with score
-	def Set_Home_Visitor(self, pbp_data):
-		# Find home and visitor team; set code
-		for play in pbp_data:
-			if len(play) > 2:
-				m = re.search(r"t(?P<visitor>\d+)", play[2])
-				if m:
-					self.Visitor = int(m.group("visitor"))
-					m = re.search(r"t(?P<home>\d+)", play[3])
-					self.Home = int(m.group("home"))
-					break
-
-
 	# Sets the quarter if a new one occurs
 	def Set_Quarter(self, play):
 		m = re.match(r"(?P<qrt>\d)(?:st|nd|rd|th) Quarter Play-by-Play", play[0])
 		if m:
-			self.Current_Qrt = int(m.group("qrt"))
+			if self.Current_Qrt == int(m.group("qrt")):
+				return False
+			else:
+				self.Current_Qrt = int(m.group("qrt"))
+				return True
 		else:
 			m =re.match(r"End of (?P<qrt>\d)(?:st|nd|rd|th) Quarter", play[1])
 			if m:
-				self.Current_Qrt = int(m.group("qrt")) + 1
-
+				if self.Current_Qrt == int(m.group("qrt")) + 1:
+					return False
+				else:
+					self.Current_Qrt = int(m.group("qrt")) + 1
+					return True
+		return True
 
 	# Sets the point totals
 	def Check_Points(self, play):

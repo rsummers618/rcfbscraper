@@ -38,8 +38,9 @@ def ESPN_id_to_Name(id):
 	return -1
 
 class playbyplaySpider(scrapy.Spider):
-	name = "playbyplay"
-	allowed_domains = ["espn.go.com"]
+	# name = "playbyplay"
+	# allowed_domains = ["espn.go.com"]
+
 
 	# Build URLs from scraped data
 	start_urls = []
