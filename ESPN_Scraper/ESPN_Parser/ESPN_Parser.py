@@ -540,16 +540,20 @@ for game_file in game_files:
 					drive.Play_List.append(cur_play)
 			else:
 				unparsed_plays.append(play)
-
+		## TODO FIX THIS VALIDATION, WAS BROKEN WITH NEW PARSER
+		'''
 		play_count = 0
 		for play in drive.Play_List:
-			if play.Play_Type in ['PASS','RUSH','SACK']:
+			if play.Play_Type in ['PASS','RUSH','SACK','PUNT']:
 				play_count += 1
 		if drive.Plays != play_count and drive.Plays > 0:
 			print "Play number mismatch"
+		'''
 
 	# Go back and fill in remaining drive data
 	for drive in drives:
+
+		## TODO FIX THIS CHECK, SET IS BROKEN BECAUSE OF PLAY NUMBMER
 		new_Play_List = list(set(drive.Play_List))
 		if len(new_Play_List) != len (drive.Play_List):
 			print "Duplicate items in drive possible error"
@@ -620,9 +624,9 @@ for play in allPlays:
 		prev_game_code = float(play.Game_Code)
 	# increment data
 	if play.Offense == home_tgs.Team_Code:
-		home_tgs.Extract_Play_Offense(play)
+		home_tgs.Extract_Play_Offense(play,visitor_tgs)
 	elif play.Offense == visitor_tgs.Team_Code:
-		visitor_tgs.Extract_Play_Offense(play)
+		visitor_tgs.Extract_Play_Offense(play,home_tgs)
 
 # Write team-game-statistics to file
 tgs_data = []

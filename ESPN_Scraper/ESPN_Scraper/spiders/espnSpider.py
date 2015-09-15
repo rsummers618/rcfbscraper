@@ -175,6 +175,8 @@ class espnSpider(scrapy.Spider):
 			counter = 0
 			for link in block_links:
 				if counter == 0:
+					if re.sub('\\\u00e9','e',link) == "LSU":
+						print "HERE"
 					home.append(re.sub('\\\u00e9','e',link))
 				elif counter == 1:
 					away.append(re.sub('\\\u00e9','e',link))
@@ -197,6 +199,8 @@ class espnSpider(scrapy.Spider):
 		make_sure_path_exists(newPath)
 		for idx, box in enumerate(boxscore_links):
 			# find codes
+			if home[idx] == "LSU":
+				print "here"
 			(home_code, home_off, team_abbvs) = Find_Abbv(home[idx], team_names, team_abbvs)
 			(away_code, away_off, team_abbvs) = Find_Abbv(away[idx], team_names, team_abbvs)
 			filename = newPath + "/" + str(away_code).zfill(4) + str(home_code).zfill(4) + str(dates[idx]) + ".txt"

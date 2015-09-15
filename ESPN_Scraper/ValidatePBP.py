@@ -2,6 +2,18 @@
 import csv
 import os
 
+year = 2015
+
+##
+#
+#  KNOWN ISSUES THAT ARE NOT PROBLEMS
+#   IF A TEAM SCORES THEIR LAST POINTS ON A RETURN OR ON DEFENSE, SCORE WILL BE WRONG
+#   ESPN ISN'T ALWAYS CORRECT WHEN THEY COUNT A PLAY, SOMETIMES NO PLAYS ARE COUNTED TO RUSH OR PASS TOTALS
+#   espn.go.com/college-football/boxscore?gameId=400763589, PRIME EXAMPLE OF A BUGGED ESPN
+#   FUMBLE AND INTERCEPTION YARDS AREN'T ADDED, OR COMPUTED TO THAT DEGREE, SO WE ARE OFF SOME ON THOSE
+#
+#
+
 def Read_CSV(file_name):
 	data = []
 	with open(file_name, "rU") as csvfile:
@@ -16,7 +28,7 @@ def FindGame(game_id):
 
 
 	#basePath = '../rcfbScraper/ESPN_Scraper/'
-	basePath = '2014'
+	basePath = str(year)
 	filename = str(game_id)
 	while len(filename) != 16:
 		filename = "0"+filename
@@ -33,7 +45,7 @@ def FindGame(game_id):
 	home = homeString.split("(",1)[0][:-1]
 	homeCode = homeString.split("(",2)[-1][:-2]
 	visitorString=file.readline()
-	visitorString = visitorString[9:]
+	visitorString = visitorString[6:]
 	visitor = visitorString.split("(",2)[0][:-1]
 	visitorCode = visitorString.split("(",2)[-1][:-2]
 	playsString = file.readline()
@@ -83,18 +95,24 @@ def ValidatePBP(PBPCSV, BoxCSV):
 
 		print "Comparing Data as " + offense + " in " + visitor + " @ " + home +" " + pbp + " " + line[1]
 		for x in range(0, len(stats_to_lookup)):
-			skiplist = stats_to_lookup.index("Time Of Possession")
-			if x == skiplist:
+			skipnames = ["Time Of Possession","Fourth Down Conv","Fourth Down Att", "Third Down Att","Third Down Conv","Kickoff Ret","Punt Ret","Kickoff","Fumble",
+						 "Fumble Lost","1st Down Rush","1st Down Pass","Kickoff Yard","Off 2XP Att","Off 2XP Made"]
+			skiplist = []
+			for stat in skipnames:
+				skiplist.append(stats_to_lookup.index(stat))
+			if x in skiplist:
 				continue;
-			if float(line[x]) == 0 or float(match[x]) == 0:
-				continue
-			delta = abs((float(match[x]) - float(line[x])) / float(line[x]))
+			if float(line[x]) == 0:# or float(match[x]) == 0:
+				#continue
+				delta = abs((float(match[x]) - float(line[x])) / 1)
+			else:
+				delta = abs((float(match[x]) - float(line[x])) / float(line[x]))
 
 			stat_deltas[x].append(delta)
-			if delta > 1:
+			if delta > 0.5:
 				print "    CRITICAL: Huge difference at " + stats_to_lookup[x] + " pbp:" + match[x] + " vs box:" + line[x]
 				num_critical += 1
-			elif delta > 0.2:
+			elif delta > 0:
 				print "    Warning: Small difference at " + stats_to_lookup[x] + " pbp:" + match[x] + " vs box:" + line[x]
 				num_warning += 1
 
@@ -125,5 +143,5 @@ def ValidatePBP(PBPCSV, BoxCSV):
 
 #ValidatePBP('../rcfbScraper/ESPN_Scraper/2014 Stats/play_TGS.csv',
 #			'../rcfbScraper/ESPN_Scraper/2014 Stats/team-game-statistics.csv')
-ValidatePBP('2014 Stats/play_TGS.csv',
-			'2014 Stats/team-game-statistics.csv')
+ValidatePBP('ESPN_Parser/' + str(year) + ' Stats temp/play_TGS.csv',
+			str(year) +' Stats/boxscore-stats.csv')

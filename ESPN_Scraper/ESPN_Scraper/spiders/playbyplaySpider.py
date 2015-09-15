@@ -44,7 +44,7 @@ class playbyplaySpider(scrapy.Spider):
 
 	# Build URLs from scraped data
 	start_urls = []
-	for i in range(1, 2):
+	for i in range(1, 17):
 		make_sure_path_exists(str(year) + "/week_" + str(i))
 		#folder = "../" + str(year) + "/scraped_games"
 		folder = str(year) + "/week_" + str(i)
@@ -112,11 +112,15 @@ class playbyplaySpider(scrapy.Spider):
 			prev_home_score = home_score
 			prev_away_score = away_score
 			driveTeam = header.xpath('.//img[contains(@class, "team-logo")]/@src').extract()
-			driveTeam = str(driveTeam[0]).split('/')[-1].split('.')[0]
+			try:
+				driveTeam = str(driveTeam[0]).split('/')[-1].split('.')[0]
+			except:
+				print "Bad Drive in Game : " + str(code)
+				break
 
 
 			###############################
-			## TODO NOTE THIS WILL PROBABLY BREAK
+			## TODO NOTE THIS WILL PROBABLY BREAK WHEN ESPN FIXES IT
 			## ESPN HAS HOME AND AWAY MIXED UP!!!!
 			## SO WE REVERSE THEM FOR NOW
 			#####################################
@@ -127,7 +131,7 @@ class playbyplaySpider(scrapy.Spider):
 			away_abv = header_away.xpath('.//span[contains(@class, "team-name")]/text()').extract()
 			away_score = header_away.xpath('.//span[contains(@class, "team-score")]/text()').extract()[0]
 			drive_details = header.xpath('.//span[contains(@class, "drive-details")]/text()').extract()[0]
-			drive_result = header.xpath('.//span[contains(@class, "headline")]/text()').extract()[0]
+			drive_result = header.xpath('.//span[contains(@class, "headline")]/text()').extract()
 
 			driveTeamName = ESPN_id_to_Name(driveTeam)
 			rows.append([driveTeamName + " at 15:00",away_abv[0],home_abv[0]])
@@ -140,12 +144,15 @@ class playbyplaySpider(scrapy.Spider):
 					place = place[0]
 				else:
 					place = ''
-				desc = play.xpath('.//span[contains(@class, "post-play")]/text()').extract()[0]
+				desc = play.xpath('.//span[contains(@class, "post-play")]/text()').extract()
 				last_item = row.xpath('.//span[contains(@class, "post-play")]/text()').extract()[-1]
-				if desc == last_item:
-					rows.append([place,desc,away_score,home_score])
-				else:
-					rows.append([place,desc,prev_away_score,prev_home_score])
+				try:
+					if desc[0] == last_item:
+						rows.append([place,desc,away_score,home_score])
+					else:
+						rows.append([place,desc,prev_away_score,prev_home_score])
+				except:
+					print "Bad play In data: " + place + "  in driveTeamName"
 
 			rows.append([driveTeamName + " DRIVE TOTALS: " + drive_details,away_abv[0],home_abv[0]])
 
