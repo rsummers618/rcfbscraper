@@ -9,7 +9,7 @@ import re
 import csv
 import os
 
-year = '2014'
+year = '2015'
 
 def Write_CSV(data, file_name):
 	with open(file_name, "w") as csvfile:
@@ -28,12 +28,43 @@ def Read_CSV(file_name):
 			data[i][j] = re.sub("\"", "", data[i][j])
 	return data
 
-def Find_Abbv(team_name, team_arr, team_abbvs):
+def addNewTeam(abbv,team_arr,team_abbvs):
+
+	#team_arr = Read_CSV("../" + str(year) + " Stats/team.csv")
+	#team_names = Read_CSV("../2014 Stats/team.csv")
+	#team_arr = team_arr[1:]
+	#team_abbvs = Read_CSV("../" + str(year) + " Stats/abbrevations.csv")
+
+	num = 9000
+	found= False
+	numUsed = True
+	while numUsed == True:
+		found = False
+		for line in team_arr:
+			if int(line[0]) == num:
+				found = True
+				num += 1
+				break
+		numUsed = found
+	print "ADDED " + abbv + " at " + str(num)
+	line = [num,abbv,"999"]
+	team_arr.append(line)
+	#Write_CSV(team_arr,"../" +  str(year) + " Stats/team.csv")
+
+def Find_Abbv(team_name,team_arr,team_abbvs):
+
+
+
 	team_name = team_name.lower()
 	team_name = team_name.replace(" ", "")
 	team_name = team_name.replace("-", "")
+
+	#if team_name == "charlotte":
+	#	print "here"
+
 	code = 0
 	for team in team_arr:
+
 		if team[1].lower().replace("-", "") == team_name or team[1].lower().replace(" ", "") == team_name:
 			code = team[0]
 			return (code, team[1], team_abbvs)
@@ -56,10 +87,10 @@ def Find_Abbv_Team(abbv, team_arr, abbv_arr):
 		team_sort_tmp = [0] * 3					# naming correlation
 
 		## TODO FLIP FOR ESPN
-		#team_sort_tmp[1] = team_arr[i][0]		# team number
-		#team_sort_tmp[2] = team_arr[i][1]		# team name
-		team_sort_tmp[1] = team_arr[i][1]		# team number
-		team_sort_tmp[2] = team_arr[i][0]		# team name
+		team_sort_tmp[1] = team_arr[i][0]		# team number
+		team_sort_tmp[2] = team_arr[i][1]		# team name
+		#team_sort_tmp[1] = team_arr[i][1]		# team number
+		#team_sort_tmp[2] = team_arr[i][0]		# team name
 		abbv_ltrs = list(abbv)
 		team_ltrs = list(team_arr[i][1])
 		pos = 0
@@ -85,9 +116,10 @@ def Find_Abbv_Team(abbv, team_arr, abbv_arr):
 	team_sort = sorted(team_sort, key=lambda arr: arr[0])
 	# Check the sorted teams for the correct match
 	i = 0
+
 	while i < len(team_sort):
 		print "\nGuess: " + str(abbv) + " = " + str(team_sort[i][2])
-		user_in = raw_input("Enter 0 for incorrect match, 1 for correct match, or 2 for unknown: ")
+		user_in = raw_input("Enter 0 for incorrect match, 1 for correct match, or 2 for unknown: or 3 for add team to 9000+")
 		for name in team_arr:
 			if user_in == name[1]:
 				if abbv_arr != 0:
@@ -101,6 +133,13 @@ def Find_Abbv_Team(abbv, team_arr, abbv_arr):
 			break
 		if user_in == "1":
 			break
+		if user_in == "3":
+			addNewTeam(abbv, team_arr, abbv_arr)
+			#team_arr_new = Read_CSV("../" + str(year) + " Stats/team.csv")
+			#team_names = Read_CSV("../2014 Stats/team.csv")
+			#team_arr_new = team_arr[1:]
+			#team_abbvs_new = Read_CSV("../" + str(year) + " Stats/abbrevations.csv")
+			return Find_Abbv(abbv,team_arr,abbv_arr)
 		if user_in == "2":
 			print "The next option is " + str(team_sort[i + 1][2])
 			continue
@@ -114,11 +153,13 @@ def Find_Abbv_Team(abbv, team_arr, abbv_arr):
 
 def crawl(year):
 
-
-	team_names = Read_CSV("ESPN_teams.csv")
+	team_arr = Read_CSV("../" + str(year) + " Stats/team.csv")
 	#team_names = Read_CSV("../2014 Stats/team.csv")
-	team_names = team_names[1:]
+	out_team_arr = []
+	out_team_arr.append(team_arr[0])
+	team_arr = team_arr[1:]
 	team_abbvs = Read_CSV("../" + str(year) + " Stats/abbrevations.csv")
+
 	newPath = "../" + str(year) + "/scraped_games"
 
 	teams = pd.read_csv('ESPN_teams.csv')
@@ -140,6 +181,7 @@ def crawl(year):
 
 		for row in table.find_all('tr')[1:]: # Remove header
 			columns = row.find_all('td')
+			#if 1 == 1:
 			try:
 				_home = True if columns[1].li.text == 'vs' else False
 				_other_team = columns[1].find_all('a')[1].text
@@ -150,28 +192,32 @@ def crawl(year):
 				datestring = datestring.replace('Sept','Sep')
 				d = datetime.strptime(datestring, '%a, %b %d')
 				d = d.replace(year=int(year))
-				date = d.strftime('%Y%d%m')
+				date = d.strftime('%Y%m%d')
 
 
 				home = _team if _home else _other_team
-				(home_code, home_off, team_abbvs) = Find_Abbv(home, team_names, team_abbvs)				# find home code
+				(home_code, home_off, team_abbvs) = Find_Abbv(home, team_arr, team_abbvs)				# find home code
 				visitor =_team if not _home else _other_team
-				(visitor_code, visitor_off, team_abbvs) = Find_Abbv(visitor, team_names, team_abbvs)	# find visitor code
+				(visitor_code, visitor_off, team_abbvs) = Find_Abbv(visitor, team_arr, team_abbvs)	# find visitor code
 				if not os.path.exists(newPath):
 					os.makedirs(newPath)
 				filename = newPath + "/" + str(visitor_code).zfill(4) + str(home_code).zfill(4) + date + ".txt"
 				with open(filename, 'w') as f:
 					f.write("Date: " + date + "\n")
 					f.write("Home: " + home + " (" + str(home_code) + ")" + "\n")
-					f.write("Visitor: " + visitor + " (" + str(visitor_code) + ")" + "\n")
-					f.write("Plays: " + "http://scores.espn.go.com/college-football/playbyplay?gameId=" +match_id +"\n")
-					f.write("Drives: " + "http://scores.espn.go.com/college-football/drivechart?gameId=" +match_id +"\n")
+					f.write("Away: " + visitor + " (" + str(visitor_code) + ")" + "\n")
 					f.write("Box: " + "http://scores.espn.go.com/college-football/boxscore?gameId=" +match_id +"\n")
+					f.write("Matchup: " + "http://scores.espn.go.com/college-football/matchup?gameId=" +match_id +"\n")
+					f.write("PBP: " + "http://scores.espn.go.com/college-football/playbyplay?gameId=" +match_id +"\n")
+					f.write("Drives: " + "http://scores.espn.go.com/college-football/drivechart?gameId=" +match_id +"\n")
+
 					f.close()
 
 			except Exception as e:
 				pass # Not all columns row are a match, is OK
 				print(e)
+	out_team_arr = out_team_arr + team_arr
+	Write_CSV(out_team_arr,"../" +  str(year) + " Stats/team.csv")
 	'''
 	dic = {'id': match_id, 'date': dates, 'home_team': home_team, 'visit_team': visit_team,
 		'home_team_score': home_team_score, 'visit_team_score': visit_team_score}
@@ -179,6 +225,7 @@ def crawl(year):
 	games = pd.DataFrame(dic).drop_duplicates(subset='id').set_index('id')
 	games.to_csv('games.csv')
 	'''
+
 
 
 crawl(year)

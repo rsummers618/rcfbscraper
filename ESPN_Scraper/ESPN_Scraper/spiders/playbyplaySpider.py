@@ -44,10 +44,11 @@ class playbyplaySpider(scrapy.Spider):
 
 	# Build URLs from scraped data
 	start_urls = []
-	for i in range(1, 17):
-		make_sure_path_exists(str(year) + "/week_" + str(i))
-		#folder = "../" + str(year) + "/scraped_games"
-		folder = str(year) + "/week_" + str(i)
+	#for i in range(1, 17):
+	#	make_sure_path_exists(str(year) + "/week_" + str(i))
+	#	#folder = "../" + str(year) + "/scraped_games"
+	if 1 == 1:
+		folder = str(year) + "/scraped_games"
 		os.chdir(folder)
 		for filename in os.listdir(os.getcwd()):
 			new_game = PBP_GameItem()
@@ -115,7 +116,7 @@ class playbyplaySpider(scrapy.Spider):
 			try:
 				driveTeam = str(driveTeam[0]).split('/')[-1].split('.')[0]
 			except:
-				print "Bad Drive in Game : " + str(code)
+				print "Empty Drive in Game : " + str(code)
 				break
 
 
@@ -144,10 +145,16 @@ class playbyplaySpider(scrapy.Spider):
 					place = place[0]
 				else:
 					place = ''
+
 				desc = play.xpath('.//span[contains(@class, "post-play")]/text()').extract()
+				try:
+					desc = desc[0]
+				except:
+					print "No Play information, This is probably an ESPN BUG"
+					continue
 				last_item = row.xpath('.//span[contains(@class, "post-play")]/text()').extract()[-1]
 				try:
-					if desc[0] == last_item:
+					if desc == last_item:
 						rows.append([place,desc,away_score,home_score])
 					else:
 						rows.append([place,desc,prev_away_score,prev_home_score])
@@ -180,5 +187,7 @@ class playbyplaySpider(scrapy.Spider):
 			newPath =  str(year)+ "/pbp/"
 			if not os.path.exists(newPath):
 					os.makedirs(newPath)
+
 			Write_CSV(rows, newPath + str(visitor).zfill(4) + str(home).zfill(4) + str(date) + ".csv")
+
 
