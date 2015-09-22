@@ -5,6 +5,8 @@ import os
 import errno
 import csv
 from ESPN_Scraper.items import PBP_GameItem
+from os import listdir
+from os.path import isdir, isfile, join
 
 year = 2015
 
@@ -43,12 +45,14 @@ class playbyplaySpider(scrapy.Spider):
 
 
 	# Build URLs from scraped data
+	#os.chdir(str(year)+"/scraped_games/week_1")
 	start_urls = []
-	#for i in range(1, 17):
-	#	make_sure_path_exists(str(year) + "/week_" + str(i))
-	#	#folder = "../" + str(year) + "/scraped_games"
-	if 1 == 1:
-		folder = str(year) + "/scraped_games"
+	for i in range(1, 17):
+		folder = str(year) + "/scraped_games/week_" + str(i)
+		make_sure_path_exists(folder)
+		#folder = "../" + str(year) + "/scraped_games"
+	#if 1 == 1:
+
 		os.chdir(folder)
 		for filename in os.listdir(os.getcwd()):
 			new_game = PBP_GameItem()
@@ -77,7 +81,7 @@ class playbyplaySpider(scrapy.Spider):
 				f.write(str(new_game['home_code']).zfill(4))
 				f.write(new_game['date'])
 				f.close()
-		os.chdir("../..")
+		os.chdir("../../..")
 
 
 

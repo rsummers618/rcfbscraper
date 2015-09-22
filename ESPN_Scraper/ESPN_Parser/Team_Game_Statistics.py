@@ -122,7 +122,7 @@ class Team_Game_Statistics:
 				self.Rush_Yard += play.Yards_Gained
 			elif play.Play_Type == "KICKOFF":
 				self.Kickoff += 1
-				self.Kickoff_Yard += play.Kick_Yards
+				self.Kickoff_Yard += int(play.Kick_Yards)
 				self.Kickoff_Ret_Yard += play.Yards_Gained
 				self.Kickoff_Ret_TD += play.Off_Touchdown
 			elif play.Play_Type == "PUNT":

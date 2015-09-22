@@ -34,7 +34,7 @@ def FindGame(game_id):
 		filename = "0"+filename
 
 	for x in range (1,18):
-		path = basePath+"/week_"+str(x)+"/"+filename+".txt"
+		path = basePath+"/scraped_games/week_"+str(x)+"/"+filename+".txt"
 		if os.path.isfile(path):
 			break
 
@@ -53,6 +53,74 @@ def FindGame(game_id):
 	drives = file.readline()
 	box = file.readline();
 	return home,homeCode,visitor,visitorCode,plays
+
+def compareGame(box_game,pbp_arr,stats_to_lookup):
+
+	stat_deltas = []
+	stat_diffs = []
+	num_warning = 0
+	num_critical = 0
+	stat_report = [0] * len(stats_to_lookup)
+
+	for x in range(0, len(stats_to_lookup)):
+		empty_arr1 = []
+		empty_arr2 = []
+		stat_deltas.append(empty_arr1)
+		stat_diffs.append(empty_arr2)
+
+	match = []
+	home,homeCode,visitor,visitorCode,pbp = FindGame(box_game[1])
+	offense = ''
+	if int(homeCode) == int(box_game[0]):
+		offense = home
+	else:
+		offense = visitor
+	for pbp_line in pbp_arr:
+		if float(pbp_line[0]) == float(box_game[0]) and float(pbp_line[1]) == float(box_game[1]):
+			match = pbp_line
+	if not match:
+
+		print "No PBP match found for " + home + " vs " + visitor +" " + pbp + " " + box_game[1]
+
+		return stat_deltas,stat_diffs,0,0
+
+	skipnames = ["Time Of Possession","Fourth Down Conv","Fourth Down Att", "Third Down Att","Third Down Conv","Kickoff Ret","Punt Ret","Kickoff","Fumble",
+					 "Fumble Lost","1st Down Rush","1st Down Pass","Kickoff Yard","Off 2XP Att","Off 2XP Made"]
+	skiplist = []
+	for stat in skipnames:
+		skiplist.append(stats_to_lookup.index(stat))
+
+	print "Comparing Data as " + offense + " in " + visitor + " @ " + home +" " + pbp + " " + box_game[1]
+	for x in range(0, len(stats_to_lookup)):
+
+
+		if x in skiplist:
+			continue;
+
+		aval1 = float(box_game[x])
+		aval2 = float(match[x])
+
+		if float(box_game[x]) == 0:# or float(match[x]) == 0:
+			#continue
+			delta = abs((float(match[x]) - float(box_game[x])) / 1)
+		else:
+			delta = abs((float(match[x]) - float(box_game[x])) / float(box_game[x]))
+			diff = (float(match[x]) - float(box_game[x]))
+
+		stat_deltas[x].append(delta)
+		stat_diffs[x].append(diff)
+		if delta > 0.5:
+			print "    CRITICAL: Huge difference at " + stats_to_lookup[x] + " pbp:" + match[x] + " vs box:" + box_game[x]
+			num_critical += 1
+		elif delta > 0:
+			print "    Warning: Small difference at " + stats_to_lookup[x] + " pbp:" + match[x] + " vs box:" + box_game[x]
+			num_warning += 1
+	return stat_deltas,stat_diffs,num_warning,num_critical
+
+
+
+
+
 
 def ValidatePBP(PBPCSV, BoxCSV):
 
@@ -76,45 +144,15 @@ def ValidatePBP(PBPCSV, BoxCSV):
 	num_warning = 0
 
 	for line in box_arr:
-		match = []
-		home,homeCode,visitor,visitorCode,pbp = FindGame(line[1])
-		offense = ''
-		if int(homeCode) == int(line[0]):
-			offense = home
-		else:
-			offense = visitor
-		for pbp_line in pbp_arr:
-			if float(pbp_line[0]) == float(line[0]) and float(pbp_line[1]) == float(line[1]):
-				match = pbp_line
-		if not match:
 
-			print "No PBP match found for " + home + " vs " + visitor +" " + pbp + " " + line[1]
-
-			continue
+		stat_deltas_new,stat_diff,num_warning_new,num_critical_new = compareGame(line,pbp_arr,stats_to_lookup)
+		num_critical += num_critical_new
+		num_warning += num_warning_new
+		for x in range(len(stat_deltas)):
+			stat_deltas[x] += stat_deltas_new[x]
 
 
-		print "Comparing Data as " + offense + " in " + visitor + " @ " + home +" " + pbp + " " + line[1]
-		for x in range(0, len(stats_to_lookup)):
-			skipnames = ["Time Of Possession","Fourth Down Conv","Fourth Down Att", "Third Down Att","Third Down Conv","Kickoff Ret","Punt Ret","Kickoff","Fumble",
-						 "Fumble Lost","1st Down Rush","1st Down Pass","Kickoff Yard","Off 2XP Att","Off 2XP Made"]
-			skiplist = []
-			for stat in skipnames:
-				skiplist.append(stats_to_lookup.index(stat))
-			if x in skiplist:
-				continue;
-			if float(line[x]) == 0:# or float(match[x]) == 0:
-				#continue
-				delta = abs((float(match[x]) - float(line[x])) / 1)
-			else:
-				delta = abs((float(match[x]) - float(line[x])) / float(line[x]))
 
-			stat_deltas[x].append(delta)
-			if delta > 0.5:
-				print "    CRITICAL: Huge difference at " + stats_to_lookup[x] + " pbp:" + match[x] + " vs box:" + line[x]
-				num_critical += 1
-			elif delta > 0:
-				print "    Warning: Small difference at " + stats_to_lookup[x] + " pbp:" + match[x] + " vs box:" + line[x]
-				num_warning += 1
 
 	num_errors = [0] * len(stats_to_lookup)
 	for x in range(0, len(stat_deltas)):

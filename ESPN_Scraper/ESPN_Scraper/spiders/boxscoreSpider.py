@@ -150,9 +150,13 @@ class boxscoreSpider(scrapy.Spider):
 	allowed_domains = ["espn.go.com"]
 	# Build URLs from scraped data
 	start_urls = []
-	for i in range(1, num_weeks+1):
-		make_sure_path_exists(str(year) + "/week_" + str(i))
-		folder = str(year) + "/week_" + str(i)
+	start_urls = []
+	for i in range(1, 17):
+		folder = str(year) + "/scraped_games/week_" + str(i)
+		make_sure_path_exists(folder)
+		#folder = "../" + str(year) + "/scraped_games"
+	#if 1 == 1:
+
 		os.chdir(folder)
 		for filename in os.listdir(os.getcwd()):
 			new_game = BOX_GameItem()
@@ -176,13 +180,13 @@ class boxscoreSpider(scrapy.Spider):
 				new_game['away_code'] = m.group("code")
 			infofile = ''.join(e for e in new_game['link'] if e.isalnum())
 			make_sure_path_exists(os.getcwd() + "/../../tmpfiles/")
-			with open(os.getcwd() + "/../../tmpfiles/" + infofile + ".txt", 'w') as f:
+			with open(os.getcwd() + "/../../../tmpfiles/" + infofile + ".txt", 'w') as f:
 				f.write(new_game['link'] + "\n")
 				f.write("Code: " + str(new_game['away_code']).zfill(4))
 				f.write(str(new_game['home_code']).zfill(4))
 				f.write(new_game['date'])
 				f.close()
-		os.chdir("../..")
+		os.chdir("../../..")
 
 
 	def parse(self, response):
@@ -196,6 +200,8 @@ class boxscoreSpider(scrapy.Spider):
 		away = int(long(code) / 1e12)
 		home = int((long(code) / 1e8) % 1e3)
 		date = int(long(code) % 1e8)
+		if int(code) == int('0030065720150906'):
+			print "HERE"
 		away_TGS = Team_Game_Statistics(code, away)
 		home_TGS = Team_Game_Statistics(code, home)
 

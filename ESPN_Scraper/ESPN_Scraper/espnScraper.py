@@ -178,7 +178,7 @@ def crawl(year):
 		soup = BeautifulSoup(r.text, "html.parser")
 		table = soup.find('table', {'class':'tablehead'})
 
-
+		week = 0
 		for row in table.find_all('tr')[1:]: # Remove header
 			columns = row.find_all('td')
 			#if 1 == 1:
@@ -199,13 +199,15 @@ def crawl(year):
 				(home_code, home_off, team_abbvs) = Find_Abbv(home, team_arr, team_abbvs)				# find home code
 				visitor =_team if not _home else _other_team
 				(visitor_code, visitor_off, team_abbvs) = Find_Abbv(visitor, team_arr, team_abbvs)	# find visitor code
-				if not os.path.exists(newPath):
-					os.makedirs(newPath)
-				filename = newPath + "/" + str(visitor_code).zfill(4) + str(home_code).zfill(4) + date + ".txt"
+				thisPath = newPath + "/week_" + str(week)
+				if not os.path.exists(thisPath):
+					os.makedirs(thisPath)
+				filename = thisPath + "/" + str(visitor_code).zfill(4) + str(home_code).zfill(4) + date + ".txt"
 				with open(filename, 'w') as f:
 					f.write("Date: " + date + "\n")
 					f.write("Home: " + home + " (" + str(home_code) + ")" + "\n")
 					f.write("Away: " + visitor + " (" + str(visitor_code) + ")" + "\n")
+					f.write("Week: " + str(week) + "\n")
 					f.write("Box: " + "http://scores.espn.go.com/college-football/boxscore?gameId=" +match_id +"\n")
 					f.write("Matchup: " + "http://scores.espn.go.com/college-football/matchup?gameId=" +match_id +"\n")
 					f.write("PBP: " + "http://scores.espn.go.com/college-football/playbyplay?gameId=" +match_id +"\n")
@@ -213,9 +215,12 @@ def crawl(year):
 
 					f.close()
 
+
 			except Exception as e:
 				pass # Not all columns row are a match, is OK
 				print(e)
+
+			week += 1
 	out_team_arr = out_team_arr + team_arr
 	Write_CSV(out_team_arr,"../" +  str(year) + " Stats/team.csv")
 	'''

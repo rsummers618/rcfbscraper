@@ -209,7 +209,7 @@ def New_Find_Abbv_Team(abbv, team_arr, abbv_arr, data, data_pos):
 	# Check if it is already matched
 	if abbv_arr != 0:
 		for team in abbv_arr:
-			if abbv.lower() == team[0].lower():
+			if abbv.lower() == team[0].lower() and (team[1] == team_arr[0][0] or team[1] == team_arr[1][0]):
 				return (team[1], team[2], abbv_arr)
 	for team in team_arr:
 		if abbv.lower() == team[1].lower():
@@ -453,6 +453,9 @@ def Extract_Team_Code(game_code, team):
 
 
 
+
+
+
 # ==================================================================
 # ===== MAIN FUNCTION ==============================================
 # ==================================================================
@@ -590,6 +593,7 @@ for game_file in game_files:
 		allDrives.append(drive)
 
 print "\nFinishing up..."
+
 
 # Write drives to file
 drive_data = []
