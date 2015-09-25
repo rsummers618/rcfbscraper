@@ -520,7 +520,7 @@ for game_file in game_files:
 				prev_play = plays[len(plays) - 1]
 			except:
 				prev_play = Play_Stats(0, 0, 0, 0, 0, 0, 0, 0, 0)
-			if cur_play.Extract_Play_Data(play, prev_play):
+			if cur_play.Extract_Play_Data(play, prev_play,cur_play.ESPN_Parser):
 				try:
 					if cur_play.Drive_Number == plays[len(plays) - 1].Drive_Number + 1:
 						cur_play.Drive_Play = 1
@@ -542,9 +542,39 @@ for game_file in game_files:
 						nReplica += 1
 						break
 				if not replica:
+					attempt_play = False
+
+					if cur_play.Off_Touchdown == 1 or cur_play.Def_Touchdown == 1:
+						attempt_play = Play_Stats(game.Code, len(plays) + 1, game.Current_Qrt, drive.Start_Time, drive.Offense, drive.Defense, off_pnts, def_pnts, drive.Drive_Num)
+						attempt_play.Play_Type = "ATTEMPT"
+						attempt_play.Spot = 3
+						attempt_play.TwoPt_Good = cur_play.TwoPt_Good
+						attempt_play.TwoPt_Att = cur_play.TwoPt_Att
+						attempt_play.Extra_Pt_Att = cur_play.Extra_Pt_Att
+						attempt_play.Kick_Blocked = cur_play.Kick_Blocked
+						attempt_play.Kick_Good = cur_play.Kick_Good
+						attempt_play.Kicker = cur_play.Kicker
+						xpt_re = re.search('\((.*?)\)',cur_play.Play_Desc)
+						if xpt_re:
+							attempt_play.Play_Desc = xpt_re.group(1)
+						attempt_play.Spot = 3
+						cur_play.TwoPt_Good = 0
+						cur_play.TwoPt_Att =0
+						cur_play.Extra_Pt_Att=0
+						cur_play.Kick_Blocked=0
+						cur_play.Kick_Good=0
+						cur_play.Kicker=0
+
 					plays.append(cur_play)
 					allPlays.append(cur_play)
 					drive.Play_List.append(cur_play)
+					if attempt_play:
+						plays.append(attempt_play)
+						allPlays.append(attempt_play)
+						drive.Play_List.append(attempt_play)
+
+
+
 			else:
 				unparsed_plays.append(play)
 		## TODO FIX THIS VALIDATION, WAS BROKEN WITH NEW PARSER

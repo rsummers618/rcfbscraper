@@ -126,13 +126,15 @@ class Team_Game_Statistics:
 				self.Kickoff_Ret_Yard += play.Yards_Gained
 				self.Kickoff_Ret_TD += play.Off_Touchdown
 			elif play.Play_Type == "PUNT":
-				self.Punt += 1
-				self.Punt_Yard += play.Kick_Yards
-				defense_tgs.Punt_Ret_Yard+= play.Yards_Gained
-				defense_tgs.Punt_Ret_TD += play.Def_Touchdown
+				if int(play.Kick_Blocked) != 1:
+					self.Punt += 1
+					self.Punt_Yard += int(play.Kick_Yards)
+					defense_tgs.Punt_Ret_Yard+= play.Yards_Gained
+					defense_tgs.Punt_Ret_TD += play.Def_Touchdown
 			elif play.Play_Type == "FIELD GOAL":
-				self.Field_Goal_Att +=1
-				self.Field_Goal_Made +=play.Kick_Good
+				if int(play.Kick_Blocked) != 1:
+					self.Field_Goal_Att +=1
+					self.Field_Goal_Made +=play.Kick_Good
 
 
 		# Down sensitive data

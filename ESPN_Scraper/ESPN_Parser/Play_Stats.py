@@ -61,7 +61,7 @@ class Play_Stats:
 	## BETTER TD PARSING, USING SCORE IS UNRELIABLE IE http://espn.go.com/college-football/playbyplay?gameId=400756905
 
 	# Extracts play data from play-by-play
-	def Extract_Play_Data(self, play, prev_play):
+	def Extract_Play_Data(self, play, prev_play,primary_parser):
 		if len(play) < 2:
 			return False
 		play_info = play[0]
@@ -76,24 +76,24 @@ class Play_Stats:
 
 		if self.Distance == 0 and self.Down != 0:
 			print "ERROR"
-		ESPN_parsed,play_desc = self.ESPN_Parser(play_desc,prev_play)
+		primary_parsed,play_desc = primary_parser(play_desc,prev_play)
 		simple_parsed = False
 		if len(play_desc) > 0:
 			simple_parsed,play_desc = self.Simple_Parser(play_desc,prev_play)
 
-		if(ESPN_parsed and simple_parsed):
-			print "needed both parsers, check this"
+		#if(primary_parsed and simple_parsed):
+			#print "needed both parsers, check this"
 
-		if((ESPN_parsed or simple_parsed) and len(play_desc) > 0 and self.No_Play==0):
+		if((primary_parsed or simple_parsed) and len(play_desc) > 0 and self.No_Play==0):
 			self.Print_Remaining(play_desc)
 			return True
-		elif (ESPN_parsed or simple_parsed):
+		elif (primary_parsed or simple_parsed):
 			return True
-		elif len(play_desc) > 0:
+		elif len(play_desc) > 2:
 			print "FULL PLAY NOT PARSED:"
 			print play_desc
 			self.Print_Remaining(play_desc)
-			return False
+			return True
 		else:
 			return False
 
@@ -334,7 +334,7 @@ class Play_Stats:
 			if fg1:
 
 				self.Kicker = fg1.group("kicker")
-				self.Kick_Yards = fg1.group("yards")
+				self.Kick_Yards = int(fg1.group("yards"))
 				play_desc = re.sub(re.escape(fg1.group(0)), "", play_desc)
 
 			play_desc = self.Get_Kick_Good(play_desc)
@@ -343,6 +343,7 @@ class Play_Stats:
 
 		if kickoff or kickoff_return:
 			self.Play_Type = "KICKOFF"
+			self.Spot = 65
 
 			if kickoff:
 				play_desc = re.sub(re.escape(kickoff.group(0)), "", play_desc)
@@ -408,6 +409,482 @@ class Play_Stats:
 
 
 		return Regex_match,play_desc
+
+	def NCAA_Parser(self,play_desc,prev_play):
+		# Define regex types
+		distance_regex = re.compile(r"(\s?(?P<rusher>\S+) (?:(?:runs? |rush |scrambles,? )?(?:to|(?:pushed |runs )?ob at)|kneels at) (?P<team>\S+) (?:(?P<end>\d+)|End Zone)\s?(for )?)",re.IGNORECASE)
+		rush1 = distance_regex.search(play_desc)
+		rush2 = re.search(r"((?P<rusher>\S+) (?P<yards>\d+) (?:yd|yard|yds|yards) (?:run|rush)\s*)", play_desc,re.IGNORECASE)
+		distance2_regex = re.compile(r"((?P<rusher>\S+) (?:rush|run|runs) (?P<yards>\d+) (?:yd|yard)s?)",re.IGNORECASE)
+		rush3 = distance2_regex.search(play_desc)
+		sack = re.search(r"((?P<passer>\S+) sacked at (?P<team>\S+) (?:(?P<end>\d+)|End Zone)( for)?)", play_desc,re.IGNORECASE)
+		#pass_short = re.search(r"((?P<passer>\D+) pass,)", play_desc,re.IGNORECASE)
+		spike = re.search(r"((?P<passer>\S+) spikes the ball at (?P<team>\S+) (?:(?P<end>\d+)|End Zone)( for no gain)?)", play_desc,re.IGNORECASE)
+		pass_cmp = re.search(r"((?P<passer>\S+) complete(?:,| )?)", play_desc,re.IGNORECASE)
+		pass_inc = re.search(r"((?P<passer>\S+) incomplete(?:,| |\.)?)", play_desc,re.IGNORECASE)
+		#pass_int = re.search(r"((?P<passer>\D+) pass intercepted(?:,| )?)", play_desc,re.IGNORECASE)
+		#pass_td = re.search(r"((?P<receiver>\D+)(?P<yards>\d+) (?:yd|yard|yds|yards) pass from (?P<passer>\D+)\s*?(?=(\())?)", play_desc,re.IGNORECASE)
+		rcvr1_regex = re.compile(r"(to (?P<receiver>\S+)\.?)",re.IGNORECASE)
+		rcvr2_regex = re.compile(r"(\s?intended for (?P<receiver>\S+)\.?)",re.IGNORECASE)
+		#rcvr3_regex = re.compile(r"(to (?P<receiver>\D+))",re.IGNORECASE)
+		#int_regex = re.compile(r"((?P<interceptor>\D+) return ? ?(for)?)",re.IGNORECASE)
+		sacker_regex = re.compile(r"(\((?P<sacker>\S+),?(?P<sacker2>\S+)?\) )",re.IGNORECASE)
+		punt = re.search(r"((?P<punter>\S+) punts? (?P<kick_yards>\d+) yards? from (?P<team>\S+) (?:(?P<end>\d+)|End Zone)\.?)", play_desc,re.IGNORECASE)
+		#punt_blocked = re.search(r"((?P<punter>\D+) (?:punt|punts) blocked\s*)", play_desc,re.IGNORECASE)
+		#punt_return = re.search(r"((?P<returner>\D+) ?(?P<yards>\d+) ?(?:yd|yard|yds|yards) ?(?:punt|punts) ?return)", play_desc,re.IGNORECASE)
+		kickoff = re.search(r"((?P<kicker>\S+) kicks (?P<kick_yards>\d+) yards? from (?P<team>\S+) (?:(?P<end>\d+)|End Zone)\.?)", play_desc,re.IGNORECASE)
+		xpt = re.search(r"((?P<kicker>\S+) extra point)", play_desc,re.IGNORECASE)
+
+		fg1 = re.search(r"((?P<kicker>\S+) (?P<yards>\d+) (?:yd|yard|yds|yards) (?:FG|field goal)\s*?)", play_desc,re.IGNORECASE)
+		#fg2 = re.search(r"(FG|field goal)", play_desc,re.IGNORECASE)
+
+		penalty_reg = re.compile(r"(Penalty on (?P<team>\S+) (?P<player>\S+), (?P<penalty>.*?),( (?P<yards>\d+) (?:yd|yard|yds|yards),)?\s?)",re.IGNORECASE)
+		team_penalty_reg = re.compile(r"(Team penalty on (?P<team>\S+), (?P<penalty>.*?),( (?P<yards>\d+) (?:yd|yard|yds|yards),)?\s?)",re.IGNORECASE)
+		penalty_enforced_reg =  re.compile(r"(enforced at (?P<enf_side>\S+) (?P<enf_yard>\d+))",re.IGNORECASE)
+		penalty_declined_reg = re.compile(r"(declined)",re.IGNORECASE)
+		#penalty_no_play_reg = re.compile(r"(Penalty.*NO PLAY)",re.IGNORECASE)
+
+		#declined_reg = re.compile(r"declined",re.IGNORECASE)
+
+		no_play = re.search(r"(no play)", play_desc,re.IGNORECASE)
+		#fumble_return =re.search(r"((?P<returner>\D+) (?P<yards>\d+) (?:yd|yard|yds|yards) (?:turnover|fumble) Return\s*)", play_desc,re.IGNORECASE)
+		#kickoff_return =re.search(r"((?P<returner>\D+) (?P<yards>\d+) (?:yd|yard|yds|yards) (?:kick|kickoff) Return\s*)", play_desc,re.IGNORECASE)
+		##punt_return =re.search(r"((?P<returner>\D+) (?P<yards>\d+) (?:yd|yard|yds|yards) (?:punt) Return\s*)", play_desc,re.IGNORECASE)
+		#int_return =re.search(r"((?P<returner>\D+) (?P<yards>\d+) (?:yd|yard|yds|yards) (?:interception) Return\s*)", play_desc,re.IGNORECASE)
+		#kick_downed = re.compile(r"downed",re.IGNORECASE)
+		fair_catch_reg = re.compile(r"(to (the )?(?P<team>\S+) (?P<end>\d+), (?:fair catch|downed) by (?P<returner>\S+))",re.IGNORECASE)
+		touchback_reg = re.compile(r"(to (?P<team>\S+) End Zone.? touchback)",re.IGNORECASE)
+		#team_safety = re.search(r"(team safety)",play_desc,re.IGNORECASE)
+		kick_out_of_bounds = re.search(r"(,?\s?out of bounds at (the )?(?:(?P<team>\S+) (?P<pos>\d+)|(?P<fifty>50)))",play_desc,re.IGNORECASE)
+
+		Regex_match = False
+
+		if no_play:
+			self.No_Play = 1
+
+		'''
+		if fumble_return:
+			self.Play_Type = "RUSH"
+			self.Fumble = 1
+			play_desc = re.sub(re.escape(fumble_return.group(0)), "", play_desc)
+			self.Receiver = fumble_return.group("returner")
+			# get yards gained
+			self.Yards_Gained = (-1)*int(fumble_return.group("yards"))
+			play_desc = self.Check_TD(play_desc, prev_play)
+
+			Regex_match = True
+
+
+		if int_return:
+			self.Play_Type = "PASS"
+			play_desc = re.sub(re.escape(int_return.group(0)), "", play_desc)
+			self.Receiver = int_return.group("returner")
+			# get yards gained
+			self.Yards_Gained = (-1)*int(int_return.group("yards"))
+			play_desc = self.Check_TD(play_desc, prev_play)
+
+			Regex_match = True
+
+		if team_safety:
+			self.Play_Type = "RUSH"
+			self.Safety = 1
+			play_desc = re.sub(re.escape(team_safety.group(0)), "", play_desc)
+		'''
+		if xpt:
+			self.Play_Type = "ATTEMPT"
+			self.Extra_Pt_Att = 1
+			play_desc = re.sub(re.escape(xpt.group(0)), "", play_desc)
+			play_desc = self.Get_Kick_Good(play_desc)
+			Regex_match = True
+
+
+		elif kickoff:# or kickoff_return:
+			self.Play_Type = "KICKOFF"
+			#self.Spot = 65
+
+			if kickoff:
+				play_desc = re.sub(re.escape(kickoff.group(0)), "", play_desc)
+				kick_return = distance_regex.search(play_desc)
+				kick_return2 = distance2_regex.search(play_desc)
+
+
+				self.Kicker = kickoff.group("kicker")
+				self.Kick_Yards = int(kickoff.group("kick_yards"))
+				# get yards gained
+				#(neg, play_desc) = self.Check_Yards_Lost(loss_regex, play_desc)
+
+				#play_desc = self.Get_Yards_Kicked(play_desc)
+				#play_desc = self.Check_Kick_OOB(play_desc)
+				if kick_out_of_bounds:
+					self.Kickoff_OOB = 1
+					play_desc = re.sub(re.escape(kick_out_of_bounds.group(0)), "", play_desc)
+
+
+
+				play_desc = self.Check_Kick_Downed(play_desc)
+				play_desc = self.Check_Touchback(play_desc)
+
+				if kick_return2:
+					self.Receiver = kick_return2.group("rusher")
+					play_desc = re.sub(re.escape(kick_return2.group(0)), "", play_desc)
+				elif kick_return:
+					self.Receiver = kick_return.group("rusher")
+					play_desc = re.sub(re.escape(kick_return.group(0)), "", play_desc)
+
+				(neg, play_desc) = self.Check_Yards_Lost( play_desc)
+				play_desc = self.Get_Yards_Gained(play_desc, neg)
+				#play_desc = self.Get_Return(play_desc)
+
+
+			'''
+			if kickoff_return:
+				play_desc = re.sub(re.escape(kickoff_return.group(0)), "", play_desc)
+				self.Receiver = kickoff_return.group("returner")
+				# get yards gained
+				self.Yards_Gained = int(kickoff_return.group("yards"))
+				play_desc = self.Check_TD(play_desc, prev_play)
+
+			# get rest of play data
+			downed = kick_downed.match(play_desc)
+			if downed:
+				play_desc = re.sub(re.escape(downed.group(0)), "", play_desc)
+			'''
+
+			fair_catch = fair_catch_reg.search(play_desc)
+			touchback = touchback_reg.search(play_desc)
+			if fair_catch:
+				play_desc = re.sub(re.escape(fair_catch.group(0)), "", play_desc)
+			if touchback:
+				play_desc = re.sub(re.escape(touchback.group(0)), "", play_desc)
+
+			play_desc = self.Get_New_Position(play_desc)
+			play_desc = self.Check_Safety(play_desc)
+			play_desc = self.Check_Fumble_NCAA(play_desc)
+			if self.Fumble == 1:
+				fumble = distance_regex.search(play_desc)
+				if fumble:
+					self.Receiver = fumble.group("rusher")
+					play_desc = re.sub(re.escape(fumble.group(0)), "", play_desc)
+			play_desc = self.Check_TD(play_desc, prev_play)
+			play_desc = self.Get_Tackler(play_desc)
+
+			# Print remaining characters
+
+			Regex_match = True
+
+
+		elif pass_cmp or pass_inc or spike:# or pass_int or pass_td or pass_short:
+			self.Play_Type = "PASS"
+
+			# Get data from pass
+			if spike:
+				play_desc = re.sub(re.escape(spike.group(0)), "", play_desc)
+				self.Passer = spike.group("passer")
+				self.Yards_Gained = 0
+				self.Completion = 0
+
+			elif pass_inc:
+				play_desc = re.sub(re.escape(pass_inc.group(0)), "", play_desc)
+				self.Passer = pass_inc.group("passer")
+				# get intended receiver
+
+				rcvr2 = rcvr2_regex.search(play_desc)
+				if rcvr2:
+					self.Receiver = rcvr2.group("receiver")
+					play_desc = re.sub(re.escape(rcvr2.group(0)), "", play_desc)
+
+				interception_regex = re.compile(r"(\s?INTERCEPTED\s? by (?P<interceptor>\S+) at (?P<team>\S+) (?:(?P<end>\d+)|End Zone))",re.IGNORECASE)
+				interception = interception_regex.search(play_desc)
+				if interception:
+					self.Interception = 1
+					play_desc = re.sub(re.escape(interception.group(0)), "", play_desc)
+					self.Interceptor = interception.group("interceptor")
+					int_return = distance_regex.search(play_desc)
+					int_return2 = distance2_regex.search(play_desc)
+					if int_return2:
+						#self.Receiver = fumble.group("rusher")
+						play_desc = re.sub(re.escape(int_return2.group(0)), "", play_desc)
+					elif int_return:
+						#self.Receiver = fumble.group("rusher")
+						play_desc = re.sub(re.escape(int_return.group(0)), "", play_desc)
+					(neg, play_desc) = self.Check_Yards_Lost( play_desc)
+					play_desc = self.Get_Yards_Gained(play_desc, neg)
+
+
+
+
+				'''
+			elif pass_int:
+				play_desc = re.sub(re.escape(pass_int.group(0)), "", play_desc)
+				self.Interception = 1
+				self.Passer = pass_int.group("passer")
+				# get interceptor
+
+
+				play_desc = self.Get_Return(play_desc)
+				intcptr = int_regex.match(play_desc)
+				if intcptr:
+					self.Interceptor = intcptr.group("interceptor")
+					play_desc = re.sub(re.escape(intcptr.group(0)), "", play_desc)
+				play_desc = self.Get_New_Position(play_desc)
+				play_desc = self.Check_TD(play_desc, prev_play)
+				(neg, play_desc) = self.Check_Yards_Lost(play_desc)
+				play_desc = self.Get_Yards_Gained(play_desc, neg)
+
+			elif pass_td:
+				self.Completion = 1
+				play_desc = re.sub(re.escape(pass_td.group(0)), "", play_desc)
+				self.Receiver = pass_td.group("receiver")
+				self.Passer = pass_td.group("passer")
+				self.Yards_Gained = int(pass_td.group("yards"))
+				play_desc = self.Get_New_Position(play_desc)
+				self.Passer = self.Check_TD(self.Passer,prev_play)
+				#play_desc = self.Check_TD(play_desc, prev_play)
+			'''
+			elif pass_cmp:# or pass_short:
+				pass_reg = pass_cmp# if pass_cmp else pass_short
+				play_desc = re.sub(re.escape(pass_reg.group(0)), "", play_desc)
+				self.Completion = 1
+				self.Passer = pass_reg.group("passer")
+				# get receiver (at end of string)
+				rcvr1 = rcvr1_regex.search(play_desc)
+				if rcvr1:
+					self.Receiver = rcvr1.group("receiver")
+					play_desc = re.sub(re.escape(rcvr1.group(0)), "", play_desc)
+				# get receiver (with yards gained)
+				rcvr2 = rcvr2_regex.search(play_desc)
+				if rcvr2:
+					self.Receiver = rcvr2.group("receiver")
+					play_desc = re.sub(re.escape(rcvr2.group(0)), "", play_desc)
+				# get yards gained
+				distance2 =distance2_regex.search(play_desc)
+				distance = distance_regex.search(play_desc)
+				if distance2:
+					self.Yards_Gained = int(distance2.group("yards"))
+					play_desc = re.sub(re.escape(distance2.group(0)), "", play_desc)
+
+				elif distance:
+					self.Receiver = distance.group("rusher")
+					play_desc = re.sub(re.escape(distance.group(0)), "", play_desc)
+
+
+				(neg, play_desc) = self.Check_Yards_Lost(play_desc)
+				play_desc = self.Get_Yards_Gained(play_desc, neg)
+				# get rest of play data
+				play_desc = self.Get_New_Position(play_desc)
+				play_desc = self.Check_First_Down(play_desc,prev_play)
+				play_desc = self.Check_Safety(play_desc)
+				play_desc = self.Check_Fumble_NCAA(play_desc)
+				if self.Fumble == 1:
+					fumble = distance_regex.search(play_desc)
+					fumble2 = distance2_regex.search(play_desc)
+					if fumble2:
+						self.Receiver = fumble2.group("rusher")
+						play_desc = re.sub(re.escape(fumble2.group(0)), "", play_desc)
+					elif fumble:
+						self.Receiver = fumble.group("rusher")
+						play_desc = re.sub(re.escape(fumble.group(0)), "", play_desc)
+
+
+				play_desc = self.Check_TD(play_desc, prev_play)
+				play_desc = self.Get_Tackler(play_desc)
+
+			# Print remaining characters
+			Regex_match = True
+
+
+
+
+		elif punt:# or punt_blocked or punt_return:
+			self.Play_Type = "PUNT"
+			if punt:
+				play_desc = re.sub(re.escape(punt.group(0)), "", play_desc)
+				distance = distance_regex.search(play_desc)
+				if distance:
+					self.Receiver = distance.group("rusher")
+					play_desc = re.sub(re.escape(distance.group(0)), "", play_desc)
+
+				self.Punter = punt.group("punter")
+				self.Kick_Yards = int(punt.group("kick_yards"))
+				# get yards gained
+				#(neg, play_desc) = self.Check_Yards_Lost(loss_regex, play_desc)
+
+				#play_desc = self.Get_Yards_Kicked(play_desc)
+				if kick_out_of_bounds:
+					self.Kickoff_OOB = 1
+					play_desc = re.sub(re.escape(kick_out_of_bounds.group(0)), "", play_desc)
+				play_desc = self.Check_Kick_Downed(play_desc)
+				play_desc = self.Check_Touchback(play_desc)
+				(neg, play_desc) = self.Check_Yards_Lost( play_desc)
+				play_desc = self.Get_Yards_Gained(play_desc, neg)
+				#play_desc = self.Get_Return(play_desc)
+			'''
+			if punt_blocked:
+				play_desc = re.sub(re.escape(punt_blocked.group(0)), "", play_desc)
+				self.Punter = punt_blocked.group("punter")
+				self.Kick_Blocked = 1
+
+			if fumble_return:
+				play_desc = re.sub(re.escape(punt_return.group(0)), "", play_desc)
+				self.Receiver = punt_return.group("returner")
+				# get yards gained
+				self.Yards_Gained = int(punt_return.group("yards"))
+				play_desc = self.Check_TD(play_desc, prev_play)
+
+
+			# get rest of play data
+			downed = kick_downed.match(play_desc)
+			if downed:
+				play_desc = re.sub(re.escape(downed.group(0)), "", play_desc)
+
+			fair = fair_catch.search(play_desc)
+			if fair:
+				self.Receiver = fair.group("returner")
+				play_desc = re.sub(re.escape(fair.group(0)), "", play_desc)
+			'''
+			fair_catch = fair_catch_reg.search(play_desc)
+			touchback = touchback_reg.search(play_desc)
+			if fair_catch:
+				play_desc = re.sub(re.escape(fair_catch.group(0)), "", play_desc)
+			if touchback:
+				play_desc = re.sub(re.escape(touchback.group(0)), "", play_desc)
+
+			play_desc = self.Get_New_Position(play_desc)
+			play_desc = self.Check_Safety(play_desc)
+			play_desc = self.Check_Fumble_NCAA(play_desc)
+			play_desc = self.Check_Fumble_NCAA(play_desc)
+			if self.Fumble == 1:
+				fumble = distance_regex.search(play_desc)
+				if fumble:
+					self.Receiver = fumble.group("rusher")
+					play_desc = re.sub(re.escape(fumble.group(0)), "", play_desc)
+			play_desc = self.Check_TD(play_desc, prev_play)
+			play_desc = self.Get_Tackler(play_desc)
+
+			# Print remaining characters
+			Regex_match = True
+
+		elif fg1:# or fg2:
+			self.Play_Type = "FIELD GOAL"
+			if fg1:
+
+				self.Kicker = fg1.group("kicker")
+				self.Kick_Yards = int(fg1.group("yards"))
+				play_desc = re.sub(re.escape(fg1.group(0)), "", play_desc)
+
+			play_desc = self.Get_Kick_Good(play_desc)
+
+			Regex_match = True
+
+
+		elif rush1 or rush2 or rush3 or sack:
+			self.Play_Type = "RUSH"
+
+			# Get data from rush
+			if sack:
+				self.Play_Type = "SACK"
+				play_desc = re.sub(re.escape(sack.group(0)), "", play_desc)
+				self.Rusher = sack.group("passer")
+				# get sacker
+				sacker = sacker_regex.search(play_desc)
+				if sacker:
+					if sacker.group("sacker"):
+						self.Sacker = sacker.group("sacker")
+					else:
+						self.Sacker = sacker.group("sacker_group")
+					play_desc = re.sub(re.escape(sacker.group(0)), "", play_desc)
+				# get yards lost
+				(neg, play_desc) = self.Check_Yards_Lost( play_desc)
+				play_desc = self.Get_Yards_Gained(play_desc, neg)
+			elif rush2:
+				play_desc = re.sub(re.escape(rush2.group(0)), "", play_desc)
+				self.Rusher = rush2.group("rusher")
+				# get yards gained
+				self.Yards_Gained = int(rush2.group("yards"))
+			elif rush3:
+				play_desc = re.sub(re.escape(rush3.group(0)), "", play_desc)
+				self.Rusher = rush3.group("rusher")
+				# get yards gained
+				self.Yards_Gained = int(rush3.group("yards"))
+			elif rush1:
+				(neg, play_desc) = self.Check_Yards_Lost( play_desc)
+				play_desc = self.Get_Yards_Gained(play_desc, neg)
+				play_desc = re.sub(re.escape(rush1.group(0)), "", play_desc)
+				self.Rusher = rush1.group("rusher")
+				# get yards gained
+
+
+
+
+
+			# get rest of play data
+			play_desc = self.Get_New_Position(play_desc)
+			play_desc = self.Check_First_Down(play_desc,prev_play)
+			play_desc = self.Check_Safety(play_desc)
+			play_desc = self.Check_Fumble_NCAA(play_desc)
+			if self.Fumble == 1:
+				fumble = distance_regex.search(play_desc)
+				if fumble:
+					self.Receiver = fumble.group("rusher")
+					play_desc = re.sub(re.escape(fumble.group(0)), "", play_desc)
+			play_desc = self.Check_TD(play_desc, prev_play)
+			play_desc = self.Get_Tackler(play_desc)
+
+			# Print remaining characters
+			Regex_match = True
+
+
+		ind_penalty = penalty_reg.search(play_desc)
+		team_penalty = team_penalty_reg.search(play_desc)
+		#penalty_no_play = penalty_no_play_reg.search(play_desc)
+
+		if ind_penalty or team_penalty:# or penalty_no_play:
+
+			#declined = declined_reg.search(play_desc)
+			#if declined:
+			#	play_desc = re.sub(re.escape(declined.group(0)),"",play_desc)
+			#else:
+			self.Penalty = 1
+
+			if self.Play_Type == "":
+				self.No_Play = 1
+				self.Play_Type = "PENALTY"
+
+			penalty = team_penalty if team_penalty else ind_penalty
+
+			if penalty:
+				self.Penalty_Type = penalty.group("penalty")
+				play_desc = re.sub(re.escape(penalty.group(0)),"",play_desc)
+
+				play_desc = self.Get_New_Position(play_desc)
+				play_desc = self.Check_First_Down(play_desc,prev_play)
+
+				penalty_enforced = penalty_enforced_reg.search(play_desc)
+				penalty_declined = penalty_declined_reg.search(play_desc)
+				if penalty_enforced:
+					## DO stuff
+					play_desc = re.sub(re.escape(penalty_enforced.group(0)),"",play_desc)
+				if penalty_declined:
+					## DO stuff
+					play_desc = re.sub(re.escape(penalty_declined.group(0)),"",play_desc)
+
+
+
+				#play_desc = re.sub(re.escape(penalty.group(0)), "", play_desc)
+			'''
+			if penalty_no_play:
+				self.No_Play = 1
+				play_desc = self.Get_New_Position(play_desc)
+				play_desc = self.Check_First_Down(play_desc,prev_play)
+			'''
+			Regex_match = True
+
+
+
+
+		return Regex_match,play_desc
+
+
 
 	def Simple_Parser(self,play_desc,prev_play):
 		skip = re.search(r"((?:Timeout|Quarter|End))",play_desc,re.IGNORECASE)
@@ -535,6 +1012,7 @@ class Play_Stats:
 
 		elif kick_simple or on_side_simple:
 			self.Play_Type = "KICKOFF"
+			self.Spot = 65
 			if kick_simple:
 				play_desc = re.sub(re.escape(kick_simple.group(0)), "", play_desc)
 			if on_side_simple:
@@ -630,13 +1108,20 @@ class Play_Stats:
 		return (neg, play_desc)
 
 
+	def Get_Tackler(self,play_desc):
+		tackler_regex = re.compile(r"(\((?P<name>\S+)\))",re.IGNORECASE) # (?P<number>\d+)\-
+		tackler = tackler_regex.search(play_desc)
+		if tackler:
+			play_desc = re.sub(re.escape(tackler.group(0)),"",play_desc)
+		return play_desc
+
 	# Gets the number of yards gained
 	def Get_Yards_Gained(self, play_desc,neg):
 		yard_regex = re.compile(r"(((?P<negative>\-)?(?P<yards>\d+) (?:yards|yard|yds|yd))|(?P<no_gain>no gain))",re.IGNORECASE)
 		gain = yard_regex.search(play_desc)
 		if gain:
 			if gain.group("negative"):
-				 neg = 1
+				neg = 1
 			if gain.group("yards"):
 				self.Yards_Gained = -1*int(gain.group("yards")) if neg == 1 else int(gain.group("yards"))
 			elif gain.group("no_gain"):
@@ -657,10 +1142,10 @@ class Play_Stats:
 
 	def Get_Kick_Good(self,play_desc):
 
-		fg_no_good_regex = re.compile(r"(no good)",re.IGNORECASE)
+		fg_no_good_regex = re.compile(r"((is )?(no good))",re.IGNORECASE)
 		no_good = fg_no_good_regex.search(play_desc)
 
-		fg_good_regex = re.compile(r"((?:Good|Made))",re.IGNORECASE)
+		fg_good_regex = re.compile(r"((is )?(?:Good|Made).?)",re.IGNORECASE)
 		good = fg_good_regex.search(play_desc)
 		if no_good:
 			self.Kick_Good = 0
@@ -803,6 +1288,19 @@ class Play_Stats:
 		return play_desc
 
 
+	def Check_Fumble_NCAA(self,play_desc):
+		fumb_regex = re.compile(r"(\s?FUMBLES\s?)",re.IGNORECASE)
+		frcd_regex = re.compile(r"(\((?P<forcer>\S+)\))",re.IGNORECASE) # (?P<number>\d+)\-
+		fumble = fumb_regex.search(play_desc)
+		if fumble:
+			self.Fumble = 1
+			play_desc = re.sub(re.escape(fumble.group(0)), "", play_desc)
+			forced = frcd_regex.search(play_desc)
+			if forced:
+				self.Forced_Fum = forced.group("forcer")
+				play_desc = re.sub(re.escape(forced.group(0)),"",play_desc)
+		return play_desc
+
 	# Checks for a fumble/lost fumble
 	def Check_Fumble(self, play_desc):
 		fumb_regex = re.compile(r"(\D+ (?P<fumble>fumbled)(?:\W\s)?)")
@@ -839,7 +1337,7 @@ class Play_Stats:
 	def Check_TD(self, play_desc, prev_play):
 
 		forceTD = False
-		td_regex = re.compile(r"((?:a|for a|) (?P<td>TD|TOUCHDOWN))", re.IGNORECASE)
+		td_regex = re.compile(r"((?:a|for a) (?P<td>TD|TOUCHDOWN))", re.IGNORECASE)
 		td = td_regex.search(play_desc)
 		if td:
 			play_desc = re.sub(re.escape(td.group(0)), "", play_desc)

@@ -64,9 +64,9 @@ def compareGame(box_game,pbp_arr,stats_to_lookup):
 
 	for x in range(0, len(stats_to_lookup)):
 		empty_arr1 = []
-		empty_arr2 = []
+		#empty_arr2 = []
 		stat_deltas.append(empty_arr1)
-		stat_diffs.append(empty_arr2)
+		stat_diffs.append(0)
 
 	match = []
 	home,homeCode,visitor,visitorCode,pbp = FindGame(box_game[1])
@@ -93,7 +93,8 @@ def compareGame(box_game,pbp_arr,stats_to_lookup):
 	print "Comparing Data as " + offense + " in " + visitor + " @ " + home +" " + pbp + " " + box_game[1]
 	for x in range(0, len(stats_to_lookup)):
 
-
+		diff = float(match[x]) - float(box_game[x])
+		stat_diffs[x] = diff
 		if x in skiplist:
 			continue;
 
@@ -105,10 +106,10 @@ def compareGame(box_game,pbp_arr,stats_to_lookup):
 			delta = abs((float(match[x]) - float(box_game[x])) / 1)
 		else:
 			delta = abs((float(match[x]) - float(box_game[x])) / float(box_game[x]))
-			diff = (float(match[x]) - float(box_game[x]))
+
 
 		stat_deltas[x].append(delta)
-		stat_diffs[x].append(diff)
+
 		if delta > 0.5:
 			print "    CRITICAL: Huge difference at " + stats_to_lookup[x] + " pbp:" + match[x] + " vs box:" + box_game[x]
 			num_critical += 1
@@ -143,6 +144,8 @@ def ValidatePBP(PBPCSV, BoxCSV):
 	num_critical = 0
 	num_warning = 0
 
+	outDict = {}
+
 	for line in box_arr:
 
 		stat_deltas_new,stat_diff,num_warning_new,num_critical_new = compareGame(line,pbp_arr,stats_to_lookup)
@@ -150,6 +153,10 @@ def ValidatePBP(PBPCSV, BoxCSV):
 		num_warning += num_warning_new
 		for x in range(len(stat_deltas)):
 			stat_deltas[x] += stat_deltas_new[x]
+
+		key = line[0] + '-' + line[1]
+		#outDict['poop'] = stat_diff
+		outDict[key] = stat_diff
 
 
 
@@ -174,6 +181,8 @@ def ValidatePBP(PBPCSV, BoxCSV):
 	print "Number of CRITICAL stats (over 100% off) is " + str(num_critical)
 	print "Number of incorrect stats (<100% & >20% off) is " + str(num_warning)
 
+	return outDict
+
 ######################
 ##### MAIN ##########
 ####################
@@ -181,5 +190,5 @@ def ValidatePBP(PBPCSV, BoxCSV):
 
 #ValidatePBP('../rcfbScraper/ESPN_Scraper/2014 Stats/play_TGS.csv',
 #			'../rcfbScraper/ESPN_Scraper/2014 Stats/team-game-statistics.csv')
-ValidatePBP('ESPN_Parser/' + str(year) + ' Stats temp/play_TGS.csv',
+ValidatePBP('ESPN_Parser/' + str(year) + ' Stats temp/ncaa/play_TGS.csv',
 			str(year) +' Stats/boxscore-stats.csv')

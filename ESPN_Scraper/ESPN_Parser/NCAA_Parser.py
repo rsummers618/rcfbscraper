@@ -331,17 +331,27 @@ with open(path + filename) as csvfile:
 	for play in plays:
 		code = str(play['Game Code']).zfill(16)
 		game = Game([[code]])
-		cur_play = Play_Stats(game.Code, play['Play Number'], play['Period Number'], play['Clock'], play['Offense Team Code'], play['Defense Team Code'], play['Offense Points'], play['Defense Points'], play['Drive Number'])
-		if cur_play.Extract_Play_Data([play['driveTextVector'],play['scoreTextVector']], prev_play):
+		if play['Play Type'] == 'KICKOFF':
+			cur_play = Play_Stats(game.Code, play['Play Number'], play['Period Number'], play['Clock'], int(play['Defense Team Code']), int(play['Offense Team Code']), int(play['Offense Points']), int(play['Defense Points']), play['Drive Number'])
+		else:
+			cur_play = Play_Stats(game.Code, play['Play Number'], play['Period Number'], play['Clock'], int(play['Offense Team Code']), int(play['Defense Team Code']), int(play['Offense Points']), int(play['Defense Points']), play['Drive Number'])
+		if cur_play.Extract_Play_Data([play['driveTextVector'],play['scoreTextVector']], prev_play,cur_play.NCAA_Parser):
 
-				cur_play.Down = play['Down']
-				cur_play.Distance = play['Distance']
+
+				cur_play.Play_Type = 'ATTEMPT' if play['Play Type'] == 'ATTEMPT' else cur_play.Play_Type
 				cur_play.Spot = play['Spot']
+				cur_play.Spot = 65  if cur_play.Play_Type == 'KICKOFF' and cur_play.Spot == '' else cur_play.Spot
+				cur_play.Spot = 3  if cur_play.Play_Type == 'ATTEMPT' and cur_play.Spot == '' else cur_play.Spot
+				if cur_play.Spot == '': cur_play.Spot = -1
+				cur_play.Down = play['Down'] if play['Down'] else 0
+				cur_play.Distance = play['Distance'] if  play['Distance'] else 0
+
 				cur_play.Drive_Play = play['Drive Play']
 				outplays.append(cur_play)
 				allPlays.append(cur_play)
 		else:
 				unparsed_plays.append(play)
+		prev_play = cur_play
 
 
 print "Finishing Up ....."
@@ -379,9 +389,9 @@ for play in allPlays:
 		prev_game_code = float(play.Game_Code)
 	# increment data
 	if play.Offense == home_tgs.Team_Code:
-		home_tgs.Extract_Play_Offense(play)
+		home_tgs.Extract_Play_Offense(play,visitor_tgs)
 	elif play.Offense == visitor_tgs.Team_Code:
-		visitor_tgs.Extract_Play_Offense(play)
+		visitor_tgs.Extract_Play_Offense(play,home_tgs)
 
 # Write team-game-statistics to file
 tgs_data = []
