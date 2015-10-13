@@ -66,11 +66,17 @@ class Play_Stats:
 			return False
 		play_info = play[0]
 		play_desc = play[1]
+
+		play_desc = play_desc.replace('\t','')
+		play_desc = play_desc.replace('\n','')
+
 		self.Play_Desc = play_desc
 
 
-		if play_desc == 'KIEL, Gunner pass incomplete to HOLTON, Johnny, PENALTY t140 holding (RAY, Idarius) 10 yards to the t140 12, NO PLAY.':
-			print "here"
+
+
+		#if play_desc == '(14:18 - 2nd) P. McKenzie pass incomplete to C. Gilbert, PENALTY LU pass interference (Ellis, Seth) 12 yards to the t2 47, 1ST DOWN ACU, NO PLAY.':
+		#	print "here"
 		# Get down and distance
 		self.Get_Play_Info(play_info)
 
@@ -99,6 +105,15 @@ class Play_Stats:
 			return False
 
 	def ESPN_Parser(self,play_desc,prev_play):
+
+
+
+		time = re.search(r"\((?P<min>\d+):(?P<sec>\d+) ?-? ?(?:1st|2nd|3rd|4th)\) ?",play_desc,re.IGNORECASE)
+		if time:
+
+			self.Drive_Start =int(time.group("min")) * 60 + int(time.group("sec"))
+			play_desc = re.sub(re.escape(time.group(0)), "", play_desc)
+
 		# Define regex types
 		rush1 = re.search(r"((?P<rusher>\D+) (?:run|rush) ?(for)?)", play_desc,re.IGNORECASE)
 		rush2 = re.search(r"((?P<rusher>\D+) (?P<yards>\d+) (?:yd|yard|yds|yards) (?:run|rush)\s*)", play_desc,re.IGNORECASE)
@@ -134,9 +149,11 @@ class Play_Stats:
 		fair_catch = re.compile(r"(fair catch by (?P<returner>\D+))",re.IGNORECASE)
 
 		team_safety = re.search(r"(team safety)",play_desc,re.IGNORECASE)
+
 		#kick_out_of_bounds = re.compile(r"((?:punt|kickoff|kick) out-of-bounds at (?:t(?P<team>\d+) (?P<pos>\d+)|(?P<fifty>50)))",re.IGNORECASE)
 
 		Regex_match = False
+
 
 		if no_play:
 			self.No_Play = 1

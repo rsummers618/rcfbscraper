@@ -713,4 +713,4 @@ def main():
 	#writeCSV outplay.csv
 	#OutReport = ValidatePBP('outplay.csv',outbox)
 
-#main()
+main()
