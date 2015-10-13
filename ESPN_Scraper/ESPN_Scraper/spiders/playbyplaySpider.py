@@ -75,6 +75,7 @@ class playbyplaySpider(scrapy.Spider):
 				new_game['away_code'] = m.group("code")
 			infofile = ''.join(e for e in new_game['link'] if e.isalnum())
 			make_sure_path_exists(os.getcwd() + "/../../tmpfiles/")
+			#print os.getcwd() + "/../../tmpfiles/" + infofile + ".txt"
 			with open(os.getcwd() + "/../../tmpfiles/" + infofile + ".txt", 'w') as f:
 				f.write(new_game['link'] + "\n")
 				f.write("Code: " + str(new_game['away_code']).zfill(4))
@@ -87,7 +88,7 @@ class playbyplaySpider(scrapy.Spider):
 
 	def parse(self, response):
 		# Get this game code from file
-		with open(os.getcwd() + "/tmpfiles/" + ''.join(e for e in response.url if e.isalnum()) + ".txt") as f:
+		with open(os.getcwd() + "/" +  str(year) + "/tmpfiles/" + ''.join(e for e in response.url if e.isalnum()) + ".txt") as f:
 			data = f.read()
 			m = re.search(r"Code: (?P<code>\d+)", data)
 			code = str(m.group('code')).zfill(16)
@@ -157,6 +158,9 @@ class playbyplaySpider(scrapy.Spider):
 					print "No Play information, This is probably an ESPN BUG"
 					continue
 				last_item = row.xpath('.//span[contains(@class, "post-play")]/text()').extract()[-1]
+				end = re.search("End of (?P<qrt>\d)(?:st|nd|rd|th) Quarter",last_item,re.IGNORECASE)
+				if end:
+					last_item = last_item = row.xpath('.//span[contains(@class, "post-play")]/text()').extract()[-2]
 				try:
 					if desc == last_item:
 						rows.append([place,desc,away_score,home_score])

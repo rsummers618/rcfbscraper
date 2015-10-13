@@ -177,6 +177,8 @@ def crawl(year):
 		r = requests.get(BASE_URL.format(row['prefix_1'], year, row['prefix_2']))
 		soup = BeautifulSoup(r.text, "html.parser")
 		table = soup.find('table', {'class':'tablehead'})
+		if not table:
+			continue
 
 		week = 0
 		for row in table.find_all('tr')[1:]: # Remove header

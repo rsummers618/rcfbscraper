@@ -150,18 +150,13 @@ class Team_Game_Statistics:
 		defense_tgs.Points = play.Def_Points
 		self.Fumble += play.Fumble
 		self.Fum_Lost += play.Fumble_Lost
-		if play.Off_Touchdown:
+		if play.Play_Type == "ATTEMPT":
 			self.Off_2XP_Att += play.TwoPt_Att
 			self.Off_2XP_Made += play.TwoPt_Good
 			self.Off_XP_Kick_Att += play.Extra_Pt_Att
 			if play.Extra_Pt_Att:
 				self.Off_XP_Kick_Made += play.Kick_Good
-		if play.Def_Touchdown:
-			defense_tgs.Off_2XP_Att += play.TwoPt_Att
-			defense_tgs.Off_2XP_Made += play.TwoPt_Good
-			defense_tgs.Off_XP_Kick_Att += play.Extra_Pt_Att
-			if play.Extra_Pt_Att:
-				defense_tgs.Off_XP_Kick_Att += play.Kick_Good
+
 
 
 	# Returns an array of relavent information

@@ -470,6 +470,10 @@ game_files = [f for f in listdir(path) if isfile(join(path, f))]
 
 for game_file in game_files:
 
+### FOR DEBUG ONLY ####
+#for x in range(0,1):
+#	game_file = '0731073220150911.csv'
+
 	# check to make sure it is from this year
 	file_year = int(game_file[8:12])
 	if file_year != year:
@@ -545,25 +549,35 @@ for game_file in game_files:
 					attempt_play = False
 
 					if cur_play.Off_Touchdown == 1 or cur_play.Def_Touchdown == 1:
-						attempt_play = Play_Stats(game.Code, len(plays) + 1, game.Current_Qrt, drive.Start_Time, drive.Offense, drive.Defense, off_pnts, def_pnts, drive.Drive_Num)
-						attempt_play.Play_Type = "ATTEMPT"
-						attempt_play.Spot = 3
-						attempt_play.TwoPt_Good = cur_play.TwoPt_Good
-						attempt_play.TwoPt_Att = cur_play.TwoPt_Att
-						attempt_play.Extra_Pt_Att = cur_play.Extra_Pt_Att
-						attempt_play.Kick_Blocked = cur_play.Kick_Blocked
-						attempt_play.Kick_Good = cur_play.Kick_Good
-						attempt_play.Kicker = cur_play.Kicker
 						xpt_re = re.search('\((.*?)\)',cur_play.Play_Desc)
 						if xpt_re:
+							attempt_play = Play_Stats(game.Code, len(plays) + 1, game.Current_Qrt, drive.Start_Time, drive.Offense, drive.Defense, off_pnts, def_pnts, drive.Drive_Num)
 							attempt_play.Play_Desc = xpt_re.group(1)
-						attempt_play.Spot = 3
-						cur_play.TwoPt_Good = 0
-						cur_play.TwoPt_Att =0
-						cur_play.Extra_Pt_Att=0
-						cur_play.Kick_Blocked=0
-						cur_play.Kick_Good=0
-						cur_play.Kicker=0
+
+							attempt_play.Play_Type = "ATTEMPT"
+							attempt_play.Spot = 3
+							attempt_play.TwoPt_Good = cur_play.TwoPt_Good
+							attempt_play.TwoPt_Att = cur_play.TwoPt_Att
+							attempt_play.Extra_Pt_Att = cur_play.Extra_Pt_Att
+							attempt_play.Kick_Blocked = cur_play.Kick_Blocked
+							attempt_play.Kick_Good = cur_play.Kick_Good
+							attempt_play.Kicker = cur_play.Kicker
+							if attempt_play.Extra_Pt_Att ==0 and attempt_play.TwoPt_Att == 0:
+								attempt_play.Extra_Pt_Att = 1
+							if cur_play.Def_Touchdown == 1:
+								attempt_play.Offense = cur_play.Defense
+								attempt_play.Defense = cur_play.Offense
+								attempt_play.Off_Points = cur_play.Def_Points
+								attempt_play.Def_Points = cur_play.Off_Points
+
+
+							attempt_play.Spot = 3
+							cur_play.TwoPt_Good = 0
+							cur_play.TwoPt_Att =0
+							cur_play.Extra_Pt_Att=0
+							cur_play.Kick_Blocked=0
+							cur_play.Kick_Good=0
+							cur_play.Kicker=0
 
 					plays.append(cur_play)
 					allPlays.append(cur_play)
